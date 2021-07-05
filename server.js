@@ -9653,3 +9653,11 @@ bot.editStatus('online', {
  
    bot.connect();
 */
+/*const nodemon = require("nodemon");
+ nodemon({
+        delay: 1000,
+        script: "./server/server.js",
+        cwd: "./bin/",
+        args: ["config.json"],
+        ext: "html js css"
+    }) */
