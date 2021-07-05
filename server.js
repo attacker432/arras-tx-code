@@ -514,6 +514,24 @@ const broadcastToPlayers = (socket, clients, args) =>{
 
                 let msgAnnounce = '[Announcement]: ' + msg;
                 sockets.broadcast(msgAnnounce, 12);
+              bot.on('messageCreate', (msg) => {
+                let log_channel = process.env.log_channel_id;
+  try {
+  bot.createMessage(log_channel, 'broadcast test')
+    } catch(err) { // log the error in chat
+  bot.createMessage(msg.channel.id, String(err));
+}});
+ 
+if (c.server_closed) {bot.editStatus('offline', {
+  name: 'Server Closed',
+  type: 1
+}); } else {
+bot.editStatus('online', {
+  name: prefix + 'help for commands!',
+  type: 2
+});};
+ 
+  // bot.connect();
             }
         }
     }
@@ -9400,7 +9418,7 @@ process.on("SIGINT", () => {
 setTimeout(() => {
   process.emit("SIGINT");
 }, 60000 * 30); // restart every 30 min.
-/*
+
 const Eris = require('eris');
 const bot = new Eris(process.env.bot_token); 
 const bot2 = new Eris(process.env.bot_token);
@@ -9624,7 +9642,7 @@ bot.on('messageCreate', (msg) => {
      if (msg.content == prefix + 'loadmaze') {
       if (msg.author.id == owner_id) {
         sockets.broadcast('arena closed by the developer.')
-       MAZE==true
+      // MAZE==true
         bot.createMessage(msg.channel.id, 'closed the arena succesfully.')
     } else {
         bot.createMessage(msg.channel.id, unauth(3));
@@ -9652,7 +9670,7 @@ bot.editStatus('online', {
 });};
  
    bot.connect();
-*/
+
 /*const nodemon = require("nodemon");
  nodemon({
         delay: 1000,
