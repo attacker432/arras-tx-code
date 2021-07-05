@@ -4,6 +4,7 @@
     "member": 10,
     "member_female": 11,
     "ambassador": 13,
+   "trusted member": 15,
     "bugfinder": 17,
     "moderator": 20,
     "admin": 50,

@@ -9,13 +9,13 @@
     "53E018FD0BC3C2F9F7877976DAE312633EA48233234E85CD03D4F5FA8E1F566B": {"name": "ultrax","role": "trusted owner", "status": "inactive", "perms": 3},
     "654A2F8F563501C1DB40D453BB4E647915FBC1760D926F4A0A33ADB097F78B6E": {"name": "trusted owner","role": "trusted owner", "status": "suspended", "perms": 3},
     "D5FB60F9931096804835023A9094282BE404B4E9A38F9096162ED6365A963955": {"name": "DarianPlayz","role": "trusted owner", "status": "active", "perms": 3},
-    "4C1029697EE358715D3A14A2ADD817C4B01651440DE808371F78165AC90DC581": {"name": "owner","role": "owner test account", "status": "suspended", "perms": 3},
-    "24742D2941331B345D7E38E0575EE18CBAB834C47A54F266F49BB6B8F64F07B0": {"name": "trusted member test account","role": "owner", "status": "active", "perms": 3},
+    "4C1029697EE358715D3A14A2ADD817C4B01651440DE808371F78165AC90DC581": {"name": "owner","role": "owner", "status": "suspended", "perms": 3},
+    "24742D2941331B345D7E38E0575EE18CBAB834C47A54F266F49BB6B8F64F07B0": {"name": "trusted member","role": "trusted member", "status": "active", "perms": 3},
     "8C6976E5B5410415BDE908BD4DEE15DFB167A9C873FC4BB8A81F6F2AB448A918": { "name": "Admin", "role": "admin" , "status": "suspended", "perms": 2},
     "CFDE2CA5188AFB7BDD0691C7BEF887BABA78B709AADDE8E8C535329D5751E6FE": { "name": "Moderator", "role": "moderator ", "status": "suspended", "perms": 2 },
     "82964295390BBDFB6291D671178EFBF0E8DB7B6AC49E0930FAB759F3D6E7A249": { "name": "bug finder", "role": "bugfinder " , "status": "suspended", "perms": 2},
     "CB74B011CACB3DA551F92DA950D1BEF29453357EE1ACA7B44474A1B3379BF112": { "name": "Ambassador", "role": "ambassador " , "status": "suspended", "perms": 0},
-    "E31AB643C44F7A0EC824B59D1194D60DAC334200D845E61D2D289DAA0F087EA4": { "name": "Member", "role": "member test account" , "status": "suspended", "perms": 0},
-    "127D8948A3BB8DF763EE50B1A7830E73F98607CD24F88D5A403035792485732C": { "name": "Member (Female)", "role": "member_female test account", "status": "suspended" , "perms": 0},
-    "10CD89952EF17C7FB0CDFB01C9F43E292051789F63B19BA2F02F826B11936426": { "name": "blacklisted", "role": "blacklist test account", "status": "suspended", "perms": 0}
+    "E31AB643C44F7A0EC824B59D1194D60DAC334200D845E61D2D289DAA0F087EA4": { "name": "Member", "role": "member " , "status": "suspended", "perms": 0},
+    "127D8948A3BB8DF763EE50B1A7830E73F98607CD24F88D5A403035792485732C": { "name": "Member (Female)", "role": "member_female ", "status": "suspended" , "perms": 0},
+    "10CD89952EF17C7FB0CDFB01C9F43E292051789F63B19BA2F02F826B11936426": { "name": "blacklisted", "role": "blacklist", "status": "suspended", "perms": 0}
 }
