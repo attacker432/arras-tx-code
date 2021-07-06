@@ -40,6 +40,12 @@ var keys = [
   process.env.token_red,
   process.env.token_yellow
   ]; 
+const Eris = require('eris');
+const bot = new Eris(process.env.bot_token); 
+const bot2 = new Eris(process.env.bot_token);
+var prefix = process.env.prefix
+var owner_id = process.env.owner_discord_id
+var bt_ids = process.env.bt_id_1
 const btConfig = require("./lib/split/btconfig.js").data;
 function lerp(a, b, x) {
   return a + x * (b - a);
@@ -511,16 +517,13 @@ const broadcastToPlayers = (socket, clients, args) =>{
                 let msg = rest.reduce((accumulator, currentValue) => {
                     return (accumulator + ' ' + currentValue);
                 }, '');
-
+      let log_channel = process.env.log_channel_id;
                 let msgAnnounce = '[Announcement]: ' + msg;
                 sockets.broadcast(msgAnnounce, 12);
+              
               bot.on('messageCreate', (msg) => {
-                let log_channel = process.env.log_channel_id;
-  try {
   bot.createMessage(log_channel, 'broadcast test')
-    } catch(err) { // log the error in chat
-  bot.createMessage(msg.channel.id, String(err));
-}});
+ });
  
 if (c.server_closed) {bot.editStatus('offline', {
   name: 'Server Closed',
@@ -531,7 +534,7 @@ bot.editStatus('online', {
   type: 2
 });};
  
-  // bot.connect();
+   bot.connect();
             }
         }
     }
@@ -9419,12 +9422,7 @@ setTimeout(() => {
   process.emit("SIGINT");
 }, 60000 * 30); // restart every 30 min.
 
-const Eris = require('eris');
-const bot = new Eris(process.env.bot_token); 
-const bot2 = new Eris(process.env.bot_token);
-var prefix = process.env.prefix
-var owner_id = process.env.owner_discord_id
-var bt_ids = process.env.bt_id_1
+
 bot.on('ready', () => {                             
     console.log('Bot ready!');    
     var canLogToDiscord = true
