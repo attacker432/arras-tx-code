@@ -521,20 +521,8 @@ const broadcastToPlayers = (socket, clients, args) =>{
                 let msgAnnounce = '[Announcement]: ' + msg;
                 sockets.broadcast(msgAnnounce, 12);
               
-              bot.on('messageCreate', (msg) => {
-  bot.createMessage(log_channel, 'broadcast test')
- });
- 
-if (c.server_closed) {bot.editStatus('offline', {
-  name: 'Server Closed',
-  type: 1
-}); } else {
-bot.editStatus('online', {
-  name: prefix + 'help for commands!',
-  type: 2
-});};
- 
-   bot.connect();
+
+  bot.createMessage(log_channel, 'broadcast test');
             }
         }
     }
