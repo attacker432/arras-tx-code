@@ -1247,6 +1247,23 @@ sockets.broadcast('***** '+socket.player.name+' has disabled auto-turret systems
 };
 //===============================
 //===============================
+const disconnect = (socket, clients, args) =>{
+    try {
+        if (socket.player != null && args.length === 1) {
+
+     
+          
+          
+     socket.kick()
+             
+        }
+    } catch (error){
+        util.error('[aioff()]');
+        util.error(error);
+    }
+};
+//===============================
+//===============================
 const newmaze = (socket, clients, args) =>{
     try {
         if (socket.player != null && args.length === 1) {
@@ -1842,6 +1859,9 @@ const chatCommandDelegates = {
     },
    '/aioff': (socket, clients, args) => {
         aioff(socket, clients, args);
+    },
+  '/disconnect': (socket, clients, args) => {
+        disconnect(socket, clients, args);
     },
   '/newmaze': (socket, clients, args) => {
         newmaze(socket, clients, args);
