@@ -4201,6 +4201,15 @@ class Entity {
     if (set.GIVE_KILL_MESSAGE != null) {
       this.settings.givesKillMessage = set.GIVE_KILL_MESSAGE;
     }
+    // =============================================================
+        // Spaceball Shooter.
+        // =============================================================
+        if (set.BULLET_TYPE != null) 
+        {
+            this.bulletType = set.BULLET_TYPE;
+        }
+        // =============================================================
+
     if (set.CAN_GO_OUTSIDE_ROOM != null) {
       this.settings.canGoOutsideRoom = set.CAN_GO_OUTSIDE_ROOM;
     }
@@ -4565,7 +4574,13 @@ class Entity {
       layer:
         this.bond != null
           ? this.bound.layer
-          : this.type === "wall"
+          : 
+      // =========================================================
+                    // Spaceball Shooter.
+                    // =========================================================
+                    (this.bulletType === 'spaceBall') ? 20 :                
+                    // =========================================================
+this.type === "wall"
           ? 11
           : this.type === "food"
           ? 10
