@@ -1,8 +1,24 @@
 /*global require, console*/
-/*jshint -W097*/
+///*jshint -W097*/
 /*jshint browser: true*/
 "use strict";
+// ==============================================================================
+// Spaceball Shooter.
+// ==============================================================================
 
+//maybe i need to delete this because glitch is bald
+/*
+resources.load([    
+    'img/space_ball.png',    
+]);
+
+let spaceBallSpriteInfo = {
+        url: 'img/space_ball.png', 
+        width: 93,
+        height: 100,        
+        frames: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]
+    }; */
+// ==============================================================================
 // Fundamental requires <3
 var global = {
   // Keys and other mathematical constants
