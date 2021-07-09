@@ -1,3 +1,4 @@
+let resources = import ('resources')
 (function() {
     function Sprite(url, pos, sourceSize, destSize, speed, frames, dir, once) {
         this.pos = pos;

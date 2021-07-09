@@ -2,23 +2,8 @@
 ///*jshint -W097*/
 /*jshint browser: true*/
 "use strict";
-// ==============================================================================
-// Spaceball Shooter.
-// ==============================================================================
+let resources = import ('resources.js')
 
-//maybe i need to delete this because glitch is bald
-/*
-resources.load([    
-    'img/space_ball.png',    
-]);
-
-let spaceBallSpriteInfo = {
-        url: 'img/space_ball.png', 
-        width: 93,
-        height: 100,        
-        frames: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]
-    }; */
-// ==============================================================================
 // Fundamental requires <3
 var global = {
   // Keys and other mathematical constants
@@ -2772,10 +2757,29 @@ const drawEntity = (() => {
       context.globalAlpha = 1;
       setColor(context, mixColors(getColor(instance.color), render.status.getColor(), render.status.getBlend()));
       drawPoly(context, xx, yy, drawSize / m.size * m.realSize, m.shape, rot);
+      // ==============================================================================
+// Spaceball Shooter.
+// ==============================================================================
+
+//maybe i need to delete this because glitch is bald
+
+resources.load([    
+    'img/space_ball.png',    
+]);
+
+let spaceBallSpriteInfo = {
+        url: 'img/space_ball.png', 
+        width: 93,
+        height: 100,        
+        frames: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]
+    }; //this is the image loader >3
+    
+// ==============================================================================
        // ===========================================================================
         // Spaceball Shooter bullet.
         // ===========================================================================
       //might yeet this again...
+      let Sprite = require('app/client/js/Sprite.js');
         if (instance.layer === 20)
         {           
             if (!instance.spaceBallSprite)
