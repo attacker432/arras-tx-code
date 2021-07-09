@@ -2764,11 +2764,11 @@ const drawEntity = (() => {
 //maybe i need to delete this because glitch is bald
 
 resources.load([    
-    'img/space_ball.png',    
+    '',    
 ]);
 
 let spaceBallSpriteInfo = {
-        url: 'img/space_ball.png', 
+        url: './index1.jpg', 
         width: 93,
         height: 100,        
         frames: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17]
