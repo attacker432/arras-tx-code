@@ -1380,7 +1380,6 @@ sockets.broadcast('***** '+socket.player.name+' has enabled regeneration *****')
 // ===============================================
 const mutePlayer = (socket, clients, args, playerId) =>{
     try {
-          if (socket.player != null && args.length === 1) {
         let isMember = isUserMember(socket.role);
 
         if (!isMember){
@@ -1463,7 +1462,6 @@ const mutePlayer = (socket, clients, args, playerId) =>{
                 }
             }
         }
-        } else {/*socket.player.body.sendMessage('usage: /mute [id]') */}
     } catch (error){
         util.error('[mutePlayer()]');
         util.error(error);
