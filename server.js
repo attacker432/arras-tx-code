@@ -1379,7 +1379,8 @@ sockets.broadcast('***** '+socket.player.name+' has enabled regeneration *****')
 // ===============================================
 const handleMuteChatCommand = (socket, clients, args, playerId) => {
     try {
-        let userAccount = getUserAccount(socket.passwordHash);
+      let shaString = sha256(socket.password).toUpperCase();
+        let userAccount = userAccounts[shaString];
 
         if (!userAccount) {
             util.warn(`[Mute] Authentication required. Username: ${socket.player.name}, Password Hash: ${socket.passwordHash}`);
@@ -1566,68 +1567,76 @@ const mutePlayer = (socket, clients, args, playerId) =>{
             muteCommandUsageCountLookup[socket.password] = 1;
         }
 
-        let clients = sockets.getClients();
+      // ========================================================================================        
+        // cmd is the command "/mute" (args[0]).        
+        // ...rest is the rest of arguments (args[1] to args[n-1]).
+        const [cmd, ...rest] = args;
 
-        if (clients){
-            const now = util.time();
+        // Construct message from the rest of the args which is an array.
+        const reason = rest.reduce((accumulator, currentValue) => {
+            return (accumulator + ' ' + currentValue);
+        }, '');
 
-            for (let i = 0; i < clients.length; ++i){
-                let client = clients[i];
+        if (!reason || reason.length === 0) {
+            socket.player.sendMessage('Usage: /mute [reason]. For example:  /mute swearing', errorMessageColor);
+            return 1;
+        }
+        // ========================================================================================
 
-                if (client.player.viewId === playerId){
-                    // Check if muter is trying to mute the player whose role is higher.
-                    // ========================================================================
-                    let muterRoleValue = userAccountRoleValues[socket.role];
-                    let muteeRoleValue = userAccountRoleValues[client.role];
-                    if (muterRoleValue <= muteeRoleValue){
-                        socket.player.body.sendMessage('Unable to mute player with same or higher role.', errorMessageColor);
-                        return 1;
-                    }
-                    // ========================================================================
+        const now = util.time();
 
-                    // 5 minutes
-                    const duration = 1000 * 60 * 5;
-                    const mutedUntil = now + duration;
+        for (const client of clients) {
+            if (client.player.viewId === playerId) {
+                // Check if muter is trying to mute the player whose role is higher.
+                // ========================================================================
+                const muterRoleValue = getUserRoleValue(socket.passwordHash);
+                const muteeRoleValue = getUserRoleValue(client.passwordHash);
 
-                    const playerInfo = mutedPlayers.find(p => p.ipAddress === client.ipAddress);
-                    let playerMuted = false;
+                if (muterRoleValue <= muteeRoleValue) {
+                    socket.player.sendMessage('Unable to mute player with same or higher role.', errorMessageColor);
+                    return 1;
+                }
+                // ========================================================================
 
-                    if (playerInfo){
-                        // Check if the player muted duration expired.
-                        if (now > playerInfo.mutedUntil){
-                            playerInfo.muterName = socket.player.name;
-                            playerInfo.mutedUntil = mutedUntil;
-                            playerMuted = true;
-                        }
-                        else {
-                            socket.player.body.sendMessage('Player already muted.', errorMessageColor);
-                        }
-                    }
-                    else {
-                        mutedPlayers.push({
-                            ipAddress: client.ipAddress,
-                            muterName: socket.player.name,
-                            mutedUntil: mutedUntil
-                        });
+                // 5 minutes
+                const duration = 1000 * 60 * 5;
+                const mutedUntil = now + duration;
+
+                const playerInfo = mutedPlayers.find(p => p.ipAddress === client.ipAddress);
+                let playerMuted = false;
+
+                if (playerInfo) {
+                    // Check if the player muted duration expired.
+                    if (now > playerInfo.mutedUntil) {
+                        playerInfo.muterName = socket.player.name;
+                        playerInfo.mutedUntil = mutedUntil;
                         playerMuted = true;
                     }
-
-                    if (playerMuted){
-                        muteCommandUsageCountLookup[socket.password] += 1;
-
-                        socket.player.body.sendMessage('Player muted.', notificationMessageColor);
-                        client.player.body.sendMessage('You have been temporarily muted by ' + socket.player.name, errorMessageColor);
-                        sockets.broadcast(socket.player.name + ' muted ' + client.player.name);
-
-                        util.log('*** ' + socket.player.name + ' muted ' +
-                            client.player.name + ' [' + client.ipAddress + '] ***');
+                    else {
+                        socket.player.sendMessage('Player already muted.', errorMessageColor);
                     }
+                }
+                else {
+                    mutedPlayers.push({
+                        ipAddress: client.ipAddress,
+                        muterName: socket.player.name,
+                        mutedUntil: mutedUntil
+                    });
+                    playerMuted = true;
+                }
 
-                    break;
+                if (playerMuted) {
+                    muteCommandUsageCountLookup.set(socket.passwordHash, usageCount + 1);
+
+                    client.player.sendMessage(`You have been temporarily muted by ${socket.player.name}. Reason: ${reason}`, errorMessageColor);
+                    sockets.broadcast(`${socket.player.name} muted ${client.player.name}. Reason: ${reason}`, notificationMessageColor);                    
+                }
+                break;
                 }
             }
         }
-    } catch (error){
+
+    catch (error){
         util.error('[mutePlayer()]');
         util.error(error);
     }

@@ -2,7 +2,7 @@
 ///*jshint -W097*/
 /*jshint browser: true*/
 "use strict";
-let resources = import ('resources.js')
+//let resources = import ('resources.js')
 
 // Fundamental requires <3
 var global = {
@@ -2760,7 +2760,7 @@ const drawEntity = (() => {
       // ==============================================================================
 // Spaceball Shooter.
 // ==============================================================================
-
+/*
 //maybe i need to delete this because glitch is bald
 
 resources.load([    
@@ -2811,6 +2811,7 @@ let spaceBallSpriteInfo = {
 
             instance.spaceBallTime = now;                           
         }
+        */
         // ===========================================================================
       // Draw turrets above us
       if (source.turrets.length === m.turrets.length) {
