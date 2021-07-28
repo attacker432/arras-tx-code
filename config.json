@@ -1,0 +1,24 @@
+{ "onlineMembership":{      
+      "url": "http://localhost:4000/authenticate",
+      "serverToken":"BFD876407F875E0698ED3B5E8BF5A983B9179CFA4759ED488CF66A457A3D0A9D"      
+    },
+
+   "chatSettings":{
+      "nextMessageDelay":1100,
+      "slidingWindowPeriod":3000,
+      "maxMessagesPerSlidingWindowPeriod":3
+   },
+
+   "minPlayers":2,
+   "maxPlayers":30,
+      
+   "minMapSize":1000,
+   "maxMapSize":8000,
+    
+   "secure":false,
+   "sslPrivateKeyFilePath":"/etc/letsencrypt/live/arras.cc/privkey.pem",
+   "sslCertificateFilePath":"/etc/letsencrypt/live/arras.cc/cert.pem",
+   "sslFullChainFilePath":"/etc/letsencrypt/live/arras.cc/fullchain.pem",
+              
+   "mapDataUrl": "https://member.tankster.io/map/download"
+ }

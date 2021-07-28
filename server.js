@@ -16,7 +16,6 @@ const c = require("./lib/split/gamemodes.js").output;
 const util = require("./lib/util");
 const ran = require("./lib/random");
 const hshg = require("./lib/hshg");
-let axois = require('axois');
 //data to manage the server with chat commands
 let closed = false;
 let doms = true;
@@ -435,8 +434,7 @@ const handleASNAddChatCommand = (socket, asn) => {
 // authenticateOnline
 // ===============================================
 const GuestRoleColor = '#ffffff';
-
-
+const config = require('./config')
 const authenticateOnline = (socket, passwordHash) => {
     try {
         const postData = {
@@ -444,7 +442,7 @@ const authenticateOnline = (socket, passwordHash) => {
             passwordHash: passwordHash,
             serverToken: c.onlineMembership.serverToken
         };
-        socket.player.sendMessage('Authenticating, please wait...', notificationMessageColor);
+       // socket.player.sendMessage('Authenticating, please wait...', notificationMessageColor);
 
         axios.post(c.onlineMembership.url, postData)
             // For status code 200 only?
@@ -470,19 +468,19 @@ const authenticateOnline = (socket, passwordHash) => {
                     // Causes the leaderboard to be updated.
                     socket.player.body.skill.score += 1;
                     userAccounts.set(passwordHash, data);
-                    socket.player.sendMessage(data.message, notificationMessageColor);                    
+               //     socket.player.sendMessage(data.message, notificationMessageColor);                    
                 }
                 else {
-                    socket.player.sendMessage(data.message, errorMessageColor);
+              //      socket.player.sendMessage(data.message, errorMessageColor);
                 }
             })
             // Status code other than 200 (i.e. 401, 403, etc).
             .catch(error => {
-                socket.player.sendMessage('Authentication server may be offline. Please try again later.', errorMessageColor);
+           //     socket.player.sendMessage('Authentication server may be offline. Please try again later.', errorMessageColor);
             });
     } catch (error) {
         util.error(error);
-        socket.player.sendMessage('Unable to authenticate online.', errorMessageColor);
+      //  socket.player.sendMessage('Unable to authenticate online.', errorMessageColor);
     }
 };
 
@@ -2179,6 +2177,12 @@ const chatCommandDelegates = {
         if (socket.player != null && args.length === 2) {
             let password = args[1];
             authenticate(socket, password);
+        }
+    },
+   '/login': (socket, clients, args) => {
+        if (socket.player != null && args.length === 2) {
+            let password = args[1];
+            handleLoginChatCommand(socket, password);
         }
     },
     '/list': (socket, clients, args) => {
