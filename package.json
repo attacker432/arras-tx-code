@@ -12,7 +12,8 @@
     "ws": "^6.1.4",
     "express": "latest",
     "nodemon": "^2.0.9",
-    "account": "^1.0.0"
+    "account": "^1.0.0",
+    "axois": "^1.0.0"
   },
   "engines": {
     "node": "10.x"

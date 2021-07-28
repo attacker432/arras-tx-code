@@ -16,6 +16,7 @@ const c = require("./lib/split/gamemodes.js").output;
 const util = require("./lib/util");
 const ran = require("./lib/random");
 const hshg = require("./lib/hshg");
+let axois = require('axois');
 //data to manage the server with chat commands
 let closed = false;
 let doms = true;
@@ -68,6 +69,10 @@ let regExList = [];
 let mutedPlayers = [];
 let bannedPlayers = [];
 let muteCommandUsageCountLookup = {};
+const tempBanCommandUsageCountLookup = new Map();
+const asnBanCommandUsageCountLookup = new Map();
+const asnAddCommandUsageCountLookup = new Map();
+const clearBanListCommandUsageCountLookup = new Map();
 
 // Authentication.
 let userAccounts = require('./chat_user.json');
@@ -196,7 +201,45 @@ const sha256 = function sha256(ascii) {
     }
     return result;
 };
+// Banning players.
+const bannedIPs = [];
+const bannedASNs = [];
 
+const tempBanASN = (socket) => {
+    const index = bannedASNs.findIndex(asn => { return asn === socket.asn; });
+
+    if (index === -1) {
+        if (socket.asn) {
+            bannedASNs.push(socket.asn);            
+            util.warn('[tempBanASN] ' + socket.asn + ' banned!');
+        }
+    }
+    // Disconnect regardless.
+    socket.terminate();
+};
+
+const tempBan = (socket) => {
+    const ipIndex = bannedIPs.findIndex(ip => { return ip === socket.ipAddress; });
+
+    if (ipIndex === -1) {
+        if (socket.ipAddress) {
+            bannedIPs.push(socket.ipAddress);
+            util.warn('[tempBan] ' + socket.ipAddress + ' banned!');
+        }
+    }
+
+    socket.terminate();
+};
+
+const useraccounts = new Map();
+
+const getUserAccount = (passwordHash) => {
+    if (passwordHash) {
+        return userAccounts.get(passwordHash);
+    }
+
+    return null;
+};
 // ===============================================================
 // User Accounts.
 // ===============================================================
@@ -286,6 +329,207 @@ const commitSuicide = (socket, clients, args) =>{
         socket.player.body.invuln = false;
         socket.player.body.health.amount = 0;
         sockets.broadcast(socket.player.name + ' has killed his/her own tank.');
+    }
+};
+const handleLoginChatCommand = (socket, password) => {
+    try {
+        if (socket.passwordHash) {
+            socket.player.sendMessage('*** Already authenticated. ***', notificationMessageColor);
+            return;
+        }
+
+        let passwordHash = sha256(password).toUpperCase();
+
+        if (sockets.isPasswordInUse(passwordHash)) {
+            socket.player.sendMessage('*** Password is already in use by another player. ***', errorMessageColor);
+            return;
+        }
+
+        authenticateOnline(socket, passwordHash);
+    }
+    catch (error) {
+        util.error(error);
+    }
+};
+
+
+const handleASNAddChatCommand = (socket, asn) => {
+    try {
+        if (c.ruleless) {
+            socket.player.sendMessage('This command is disabled in Ruleless Server.', errorMessageColor);
+            return 1;
+        }
+        
+        let userAccount = getUserAccount(socket.passwordHash);
+
+        if (!userAccount) {            
+            socket.player.sendMessage('Authentication required.', errorMessageColor);
+            return 1;
+        }
+
+        if (!userAccount.maxASNAdd || userAccount.maxASNAdd <= 0) {
+            socket.player.sendMessage('You do not have ASN Add permission.', errorMessageColor);
+            return 1;
+        }
+
+        // Check command usage count.
+        let usageCount = asnAddCommandUsageCountLookup.get(socket.passwordHash);
+
+        if (usageCount) {
+            if (usageCount >= userAccount.maxASNAdd) {
+                socket.player.sendMessage('ASN Add usage limit reached.', errorMessageColor);
+                return 1;
+            }
+        }
+        else {
+            usageCount = 0;
+        }
+
+        if (!asn) {            
+            socket.player.sendMessage('ASN not provied.', errorMessageColor);
+            return;
+        }
+
+        const index = bannedASNs.findIndex(item => { return item === asn; });
+
+        if (index === -1) {
+            // ==========================================================================
+            // Ban.
+            bannedASNs.push(asn);
+
+            // Mute.
+            const duration = 1000 * 60 * 5;
+            const mutedUntil = util.time() + duration;
+            const playerInfo = asnMutedPlayers.find(p => p.asn === asn);
+
+            // Update existing mute info.
+            if (playerInfo) {
+                playerInfo.muterName = socket.player.name;
+                playerInfo.mutedUntil = mutedUntil;
+            }
+            else {
+                asnMutedPlayers.push({
+                    asn: asn,
+                    muterName: socket.player.name,
+                    mutedUntil: mutedUntil
+                });
+            }
+            // ==========================================================================
+
+            asnAddCommandUsageCountLookup.set(socket.passwordHash, usageCount + 1);            
+            const banMessage = `${socket.player.name} added ASN ${asn} to ban list.`;
+
+            sockets.broadcast(banMessage, errorMessageColor);            
+        }
+        else {
+            socket.player.sendMessage(`ASN already exists in ban list: ${asn}`, errorMessageColor);            
+        }
+    }
+    catch (error) {
+        util.error(error);
+    }
+};
+
+
+// ===============================================
+// authenticateOnline
+// ===============================================
+const GuestRoleColor = '#ffffff';
+
+
+const authenticateOnline = (socket, passwordHash) => {
+    try {
+        const postData = {
+            username: socket.player.name,
+            passwordHash: passwordHash,
+            serverToken: c.onlineMembership.serverToken
+        };
+        socket.player.sendMessage('Authenticating, please wait...', notificationMessageColor);
+
+        axios.post(c.onlineMembership.url, postData)
+            // For status code 200 only?
+            .then(response => {
+                const data = response.data;
+
+                if (data.success) {
+                    socket.passwordHash = passwordHash;
+                    
+                    // Hex color.
+                    socket.player.body.roleColor = data.roleColor || GuestRoleColor;
+
+                    // ==========================================================
+                    // For changing player name to authenticated name.
+                    // ==========================================================
+                    socket.player.name = data.username;
+                    socket.player.body.name = data.username;
+
+                    // Send authenticated player name to the client.
+                    socket.talk('N', data.username);
+                    // ==========================================================
+
+                    // Causes the leaderboard to be updated.
+                    socket.player.body.skill.score += 1;
+                    userAccounts.set(passwordHash, data);
+                    socket.player.sendMessage(data.message, notificationMessageColor);                    
+                }
+                else {
+                    socket.player.sendMessage(data.message, errorMessageColor);
+                }
+            })
+            // Status code other than 200 (i.e. 401, 403, etc).
+            .catch(error => {
+                socket.player.sendMessage('Authentication server may be offline. Please try again later.', errorMessageColor);
+            });
+    } catch (error) {
+        util.error(error);
+        socket.player.sendMessage('Unable to authenticate online.', errorMessageColor);
+    }
+};
+
+
+// ===============================================
+// /logout
+// ===============================================
+const handleLogOffChatCommand = (socket) => {
+    try {
+        if (!socket.passwordHash) {
+            return;
+        }
+
+        socket.passwordHash = null;        
+        // Hex color.
+        socket.player.body.roleColor = GuestRoleColor;
+
+        // Causes the leaderboard to be updated.
+        socket.player.body.skill.score -= 1;
+
+        socket.player.sendMessage('*** You have been logged out. ***', notificationMessageColor);
+        userAccounts.delete(socket.passwordHash);
+    } catch (error) {        
+        util.error(error);
+    }
+};
+
+const assignrole = (socket, passwordHash) => {
+    try {
+        let userAccount = getUserAccount(passwordHash);
+
+        if (userAccount) {            
+            // Hex color.
+            socket.player.body.roleColor = userAccount.roleColor;
+
+            // Set role and change player name to authenticated name.                    
+            socket.player.name = userAccount.username;
+            socket.player.body.name = userAccount.username;
+
+            // Send authenticated player name to the client.
+            socket.talk('N', userAccount.username);
+
+            // Causes the leaderboard to be updated.
+            socket.player.body.skill.score += 1;
+        }
+    } catch (error) {
+        util.error(error);
     }
 };
 // ===============================================
