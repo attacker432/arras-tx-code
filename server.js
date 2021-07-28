@@ -434,13 +434,13 @@ const handleASNAddChatCommand = (socket, asn) => {
 // authenticateOnline
 // ===============================================
 const GuestRoleColor = '#ffffff';
-const config = require('./config')
+const co = require('./config.json');
 const authenticateOnline = (socket, passwordHash) => {
     try {
         const postData = {
             username: socket.player.name,
             passwordHash: passwordHash,
-            serverToken: c.onlineMembership.serverToken
+            serverToken: co.onlineMembership.serverToken
         };
        // socket.player.sendMessage('Authenticating, please wait...', notificationMessageColor);
 
