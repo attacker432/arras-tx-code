@@ -434,6 +434,7 @@ const handleASNAddChatCommand = (socket, asn) => {
 // authenticateOnline
 // ===============================================
 const GuestRoleColor = '#ffffff';
+const axios = require('axios');
 const co = require('./config.json');
 const authenticateOnline = (socket, passwordHash) => {
     try {
@@ -444,7 +445,7 @@ const authenticateOnline = (socket, passwordHash) => {
         };
        // socket.player.sendMessage('Authenticating, please wait...', notificationMessageColor);
 
-        axios.post(c.onlineMembership.url, postData)
+        axios.post(co.onlineMembership.url, postData)
             // For status code 200 only?
             .then(response => {
                 const data = response.data;
