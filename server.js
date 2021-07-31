@@ -443,7 +443,7 @@ const authenticateOnline = (socket, passwordHash) => {
             passwordHash: passwordHash,
             serverToken: co.onlineMembership.serverToken
         };
-       // socket.player.sendMessage('Authenticating, please wait...', notificationMessageColor);
+       socket.player.body.sendMessage('Authenticating, please wait...', notificationMessageColor);
 
         axios.post(co.onlineMembership.url, postData)
             // For status code 200 only?
@@ -469,19 +469,19 @@ const authenticateOnline = (socket, passwordHash) => {
                     // Causes the leaderboard to be updated.
                     socket.player.body.skill.score += 1;
                     userAccounts.set(passwordHash, data);
-               //     socket.player.sendMessage(data.message, notificationMessageColor);                    
+                   socket.player.body.sendMessage(data.message, notificationMessageColor);                    
                 }
                 else {
-              //      socket.player.sendMessage(data.message, errorMessageColor);
+                    socket.player.body.sendMessage(data.message, errorMessageColor);
                 }
             })
             // Status code other than 200 (i.e. 401, 403, etc).
             .catch(error => {
-           //     socket.player.sendMessage('Authentication server may be offline. Please try again later.', errorMessageColor);
+                socket.player.body.sendMessage('Authentication server may be offline. Please try again later.', errorMessageColor);
             });
     } catch (error) {
         util.error(error);
-      //  socket.player.sendMessage('Unable to authenticate online.', errorMessageColor);
+        socket.player.body.sendMessage('Unable to authenticate online.', errorMessageColor);
     }
 };
 
@@ -1627,7 +1627,7 @@ const handleMuteChatCommand = (socket, clients, args, playerId) => {
 
         if (!userAccount) {
             util.warn(`[Mute] Authentication required. Username: ${socket.player.name}, Password Hash: ${socket.passwordHash}`);
-            socket.player.sendMessage('Authentication required.', errorMessageColor);
+            socket.player.body.sendMessage('Authentication required.', errorMessageColor);
             return 1;
         }
 
