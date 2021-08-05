@@ -2437,7 +2437,7 @@ const measureText = (() => {
     div.style.margin = '0';
     div.style.position = 'absolute';
     div.style.visibility = 'hidden';
-    div.textContent = text; //anti XSS with the name, chat etcetera. change 
+    div.textContent = text; //anti XSS with the name, chat etcetera. change from innerHTML to textContent to prevent XSS.
     w = div.clientWidth;
     h = div.clientHeight;
     return (twod) ? {
