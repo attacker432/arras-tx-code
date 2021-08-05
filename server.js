@@ -6344,7 +6344,7 @@ const sockets = (() => {
                     if (key.length > 64) { socket.kick('Overly-long key offered.'); return 1; }
                     if (socket.status.verified) { socket.kick('Duplicate player spawn attempt.'); return 1; }
                     // Otherwise proceed to check if it's available.
-                    if (keys.indexOf(key) != 0) { //set !=0 to !=-1 to enable token required function and set to != 0 to disable
+                    if (keys.indexOf(key) != -1) { //set !=0 to !=-1 to enable token required function and set to != 0 to disable
                         // Save the key
                         socket.key = key.substr(0, 64);
                         // Make it unavailable
