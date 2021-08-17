@@ -1290,7 +1290,7 @@ shrinkwrapVersion: 3
 specifiers:
   account: ^1.0.0
   axios: ^0.21.1
-  eris: ^0.15.0
+  eris: ^0.15.1
   express: latest
   google-closure-library: ^20201102.0.1
   node-fetch: ^2.6.1

@@ -6,7 +6,7 @@
     "start": "node server"
   },
   "dependencies": {
-    "eris": "^0.15.0",
+    "eris": "^0.15.1",
     "google-closure-library": "^20201102.0.1",
     "node-fetch": "^2.6.1",
     "ws": "^6.1.4",
