@@ -3,6 +3,8 @@
 /*global goog, Map, let */
 /*jshint esversion: 6 */
 "use strict";
+//SSH setup.
+
 
 // General requires
 require("google-closure-library");
@@ -9870,7 +9872,7 @@ var maintainloop = (() => {
         instance.health.regenerate(
           instance.shield.max && instance.shield.max === instance.shield.amount
         );
-      }
+     ////// }
     });
   };
 })();
