@@ -6,7 +6,6 @@ dependencies:
   google-closure-library: 20201102.0.1
   node-fetch: 2.6.1
   nodemon: 2.0.12
-  ssh-spawner: 2.1.1
   ws: 6.2.2
 packages:
   /@sindresorhus/is/0.14.0:
@@ -1056,20 +1055,10 @@ packages:
     dev: false
     resolution:
       integrity: sha512-JvdAWfbXeIGaZ9cILp38HntZSFSo3mWg6xGcJJsd+d4aRMOqauag1C63dJfDw7OaMYwEbHMOxEZ1lqVRYP2OAw==
-  /shell-quote/1.7.2:
-    dev: false
-    resolution:
-      integrity: sha512-mRz/m/JVscCrkMyPqHc/bczi3OQHkLTqXHEFu0zDhK/qfv3UcOA4SVmRCLmos4bhjr9ekVQubj/R7waKapmiQg==
   /signal-exit/3.0.3:
     dev: false
     resolution:
       integrity: sha512-VUJ49FC8U1OxwZLxIbTTrDvLnf/6TDgxZcK8wxR8zs13xpx7xbG60ndBlhNrFi2EMuFRoeDoJO7wthSLq42EjA==
-  /ssh-spawner/2.1.1:
-    dependencies:
-      shell-quote: 1.7.2
-    dev: false
-    resolution:
-      integrity: sha1-1ZgzRXmvsTLuwV9QZwa3ptBOTrg=
   /statuses/1.5.0:
     dev: false
     engines:
@@ -1306,5 +1295,4 @@ specifiers:
   google-closure-library: ^20201102.0.1
   node-fetch: ^2.6.1
   nodemon: ^2.0.9
-  ssh-spawner: ^2.1.1
   ws: ^6.1.4
