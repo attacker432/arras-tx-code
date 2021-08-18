@@ -9968,7 +9968,6 @@ var websockets = (() => {
   port: server.address().port, // defaults to 22
   envMode: 'cmd' // one of 'inline' 'cmd' or 'default'
 });
-  
 spawner('env', null, {
   env: {
     FOO: 123 
