@@ -9961,6 +9961,20 @@ var websockets = (() => {
         "."
     );
   }
+  var spawner = require('ssh-spawner').createSpawner({
+  user: 'root',
+  server: server.address(),
+  allowPasswords: false, // defaults to false
+  port: server.address().port, // defaults to 22
+  envMode: 'cmd' // one of 'inline' 'cmd' or 'default'
+});
+  
+spawner('env', null, {
+  env: {
+    FOO: 123 
+  },
+  stdio: 'pipe'
+})
   // Build it
   return new WebSocket.Server(config);
 })().on("connection", sockets.connect);
