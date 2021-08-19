@@ -2504,7 +2504,85 @@ util.log(
     room.maxFood * room.nestFoodAmount +
     "."
 );
+ // Transformation.        
+        try {
+            if (this.body.canTransform) {
+                // Bunker-type tanks.                
+                if (bunkerTankLookup[this.body.tankType]) {
+                    if (this.body.transforming === 1) {
+                        // 0 means initial stage.
+                        if (this.body.transformStage === 0) {
+                            // Set to 1 to initiate transforming from initial to last stage.
+                            this.body.transformStage = 1;
+                        }
+                        else if (this.body.transformStage === 3) {
+                            this.body.invuln = true;
+                            // Set to 2 to initiate transforming from last to initial stage.
+                            this.body.transformStage = 2;
+                        }
+                        // Transform from initial to last stage.
+                        else if (this.body.transformStage === 1) {
+                            this.body.transformStep += 0.1;
 
+                            if (this.body.transformStep >= 1) {
+                                // Set stage to last.
+                                this.body.transformStage = 3;
+                                this.body.transformStep = 0;
+                                this.body.transforming = 0;
+                                this.body.invuln = false;
+                                this.body.lastTransformTime = util.time();
+                            }
+                        }
+                        // Transform from last to initial stage.
+                        else if (this.body.transformStage === 2) {
+                            this.body.invuln = true;
+                            this.body.transformStep += 0.1;
+
+                            if (this.body.transformStep >= 1) {
+                                this.player.command.lmb = false;
+                                this.player.command.autofire = false;
+
+                                // Set stage to initial.
+                                this.body.transformStage = 0;
+                                this.body.transformStep = 0;
+                                this.body.transforming = 0;
+
+                                // Allow immediate transformation to last stage?
+                                this.body.lastTransformTime = util.time();
+                            }
+                        }
+                    }                    
+
+                    // =====================================================================
+                    // Automatic transform into last stage after some time has passed. Auto unbunker.
+                    // =====================================================================
+                    else if (this.body.transforming === 0) {
+                        if (this.body.transformStage === 0) {
+                            // Another way to auto transform back to last stage.
+                            let now = util.time();
+                            let dt = now - this.body.lastTransformTime;
+
+                            // In milliseconds.
+                            const unbunkDuration = isSurvivalMode ? (20 * 1000) : (120 * 1000);
+                            
+                            if (dt >= unbunkDuration) 
+                            {
+                                // Set to 1 to initiate transforming from initial to last stage.                        
+                                this.body.transformStage = 1;
+                                this.body.transforming = 1;
+                                this.body.transformStep = 0;
+
+                                this.body.lastTransformTime = util.time();
+                            }
+                        }
+                    }
+
+                    // Bunker invulnerable bug fix.
+                    if (this.body.transformStage === 0 && this.body.underAttackType !== AttackTypeWitchcraft) {
+                        this.body.invuln = true;
+                    }
+                }
+            }
 // Define a vector
 class Vector {
   constructor(x, y) {
