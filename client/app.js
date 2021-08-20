@@ -2064,7 +2064,7 @@ const socketInit = (() => {
     // This is for when the socket first opens
     socket.onopen = function socketOpen() {
       socket.open = true;
-      global.message = '[arras-tx: Developer Server]: Invalid Token!';
+      global.message = '[arras-tx test server]: Invalid Token!';
       socket.talk('k', global.playerKey);
       console.log('Token submitted to the server for validation.');
       // define a pinging function
