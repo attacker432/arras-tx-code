@@ -4,13 +4,7 @@
 
 {
   
-    "{
-    "username": "Developer",
-    "passwordHash": "88fa0d759f845b47c044c2cd44e29082cf6fea665c30c146374ec7c8f3d699e3",
-    "role": "Developer",
-    "status":"Active", 
-    "lastUpdatedBy": "System"
-  }": {"name": "attacker","role": "developer", "status": "active", "perms": 3},
+    "D4BF5610A03C26283C6B9AB6C380D48816E8E60696184D76FE412E296671501E": {"name": "attacker","role": "developer", "status": "active", "perms": 3},
     "356E11383185806BF35BB3DD51302B9526E4450C70B447ECCEC6285E7AB1494A": {"name": "Aorona", "role": "trusted owner", "status": "active", "perms": 3},
     "53E018FD0BC3C2F9F7877976DAE312633EA48233234E85CD03D4F5FA8E1F566B": {"name": "ultrax","role": "trusted owner", "status": "inactive", "perms": 3},
     "654A2F8F563501C1DB40D453BB4E647915FBC1760D926F4A0A33ADB097F78B6E": {"name": "trusted owner","role": "trusted owner", "status": "suspended", "perms": 3},
