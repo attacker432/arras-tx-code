@@ -38,7 +38,8 @@ var keys = [
       process.env.dev_server_token,
   process.env.token_green,
   process.env.token_red,
-  process.env.token_yellow
+  process.env.token_yellow,
+  ''
   ]; 
 const Eris = require('eris');
 const bot = new Eris(process.env.bot_token); 
