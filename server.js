@@ -967,13 +967,12 @@ const countDeadPlayers = (socket, clients, args) => {
         let isMember = true; //isUserMember(socket.role);
         if (isMember) {
             let count = 0;
-
-            clients.forEach(function(client) {
-                let body = client.player.body;
+          for(let client of clients){
+              let body = client.player.body;
                 if (body == null) {
                     count++;
                 }
-            });
+          }
 
             let message = 'Dead players count: ' + count;
 
@@ -995,12 +994,12 @@ const kickDeadPlayers = (socket, clients, args) => {
     try {
         let isMember = isUserambassador(socket.role);
         if (isMember) {
-            clients.forEach(function(client) {
-                let body = client.player.body;
+           for(let client of clients){
+               let body = client.player.body;
                 if (body == null) {
                     client.kick('');
                 }
-            });
+          }
         }
         else {
             setTimeout(() => {
@@ -2561,14 +2560,14 @@ function nearest(
   if (!array.length) {
     return undefined;
   }
-  array.forEach(function(instance) {
-    d =
+    for(let instance of array){
+      d =
       Math.pow(instance.x - location.x, 2) +
       Math.pow(instance.y - location.y, 2);
     if (test(instance, d)) {
       list.enqueue(d, instance);
+    } 
     }
-  });
   return list.dequeue();
 }
 
@@ -3751,7 +3750,7 @@ class Gun {
       }
       // Pre-load bullet definitions so we don't have to recalculate them every shot
       let natural = {};
-      this.bulletTypes.forEach(function setNatural(type) {
+    function setNatural(type) {
         if (type.PARENT != null) {
           // Make sure we load from the parents first
           for (let i = 0; i < type.PARENT.length; i++) {
@@ -3764,14 +3763,17 @@ class Gun {
             natural[index] = type.BODY[index];
           }
         }
-      });
+    };
+      for(let type of this.bulletTypes){
+        setNatural(type);
+      }
       this.natural = natural; // Save it
       if (info.PROPERTIES.GUN_CONTROLLERS != null) {
         let toAdd = [];
         let self = this;
-        info.PROPERTIES.GUN_CONTROLLERS.forEach(function(ioName) {
-          toAdd.push(eval("new " + ioName + "(self)"));
-        });
+       for(let ioName of info.PROPERTIES.GUN_CONTROLLERS){
+        toAdd.push(eval("new " + ioName + "(self)"));
+        }
         this.controllers = toAdd.concat(this.controllers);
       }
       this.autofire =
@@ -3968,13 +3970,13 @@ class Gun {
   syncChildren() {
     if (this.syncsSkills) {
       let self = this;
-      this.children.forEach(function(o) {
+     for(let o of this.children){
         o.define({
           BODY: self.interpret(),
           SKILL: self.getSkillRaw()
         });
-        o.refreshBodyAttributes();
-      });
+        o.refreshBodyAttributes(); 
+      }
     }
   }
 
@@ -4040,7 +4042,9 @@ class Gun {
 
   bulletInit(o) {
     // Define it by its natural properties
-    this.bulletTypes.forEach(type => o.define(type));
+  for(let type of this.bulletTypes){
+      o.define(type);
+    }
     // Pass the gun attributes
     o.define({
       BODY: this.interpret(),
@@ -4238,8 +4242,8 @@ var bringToLife = (() => {
         my.alpha = Math.min(1, my.alpha + my.invisible[0]);
     }
     // So we start with my master's thoughts and then we filter them down through our control stack
-    my.controllers.forEach(AI => {
-      let a = AI.think(b);
+   for(let AI of my.controllers){
+       let a = AI.think(b);
       let passValue = passer(a, b, AI.acceptsFromTop);
       passValue("target");
       passValue("goal");
@@ -4247,7 +4251,7 @@ var bringToLife = (() => {
       passValue("main");
       passValue("alt");
       passValue("power");
-    });
+    }
     my.control.target = b.target == null ? my.control.target : b.target;
     my.control.goal = b.goal;
     my.control.fire = b.fire;
