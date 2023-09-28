@@ -4,6 +4,7 @@ dependencies:
   eris: 0.15.1
   express: 4.17.1
   google-closure-library: 20201102.0.1
+  lodash: 4.17.21
   mongodb: 4.1.1
   node-fetch: 2.6.1
   nodemon: 2.0.12
@@ -756,6 +757,10 @@ packages:
       node: '>=8'
     resolution:
       integrity: sha512-weT+r0kTkRQdCdYCNtkMwWXQTMEswKrFBkm4ckQOMVhhqhIMI1UT2hMj+1iigIhgSZm5gTmrRXBNoGUgaTY1xA==
+  /lodash/4.17.21:
+    dev: false
+    resolution:
+      integrity: sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==
   /lowercase-keys/1.0.1:
     dev: false
     engines:
@@ -1418,6 +1423,7 @@ specifiers:
   eris: ^0.15.1
   express: latest
   google-closure-library: ^20201102.0.1
+  lodash: ^4.17.21
   mongodb: ^4.1.0
   node-fetch: ^2.6.1
   nodemon: ^2.0.9

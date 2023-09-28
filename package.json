@@ -15,7 +15,8 @@
     "account": "^1.0.0",
     "axios": "^0.21.1",
     "ssh-spawner": "^2.1.1",
-    "mongodb": "^4.1.0"
+    "mongodb": "^4.1.0",
+    "lodash": "^4.17.21"
   },
   "engines": {
     "node": "10.x"

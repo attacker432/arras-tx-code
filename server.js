@@ -16,6 +16,8 @@ const c = require("./lib/split/gamemodes.js").output;
 const util = require("./lib/util");
 const ran = require("./lib/random");
 const hshg = require("./lib/hshg");
+const axios = require('axios');
+const _ = require('lodash');
 //data to manage the server with chat commands
 let closed = false;
 let doms = true;
@@ -232,6 +234,7 @@ const tempBan = (socket) => {
 };
 
 const useraccounts = new Map();
+const GuestRoleColor = "#ffffff"
 
 const getUserAccount = (passwordHash) => {
     if (passwordHash) {
@@ -239,6 +242,38 @@ const getUserAccount = (passwordHash) => {
     }
 
     return null;
+};
+
+const getUserRoleValue = (passwordHash) => {
+    const userAccount = getUserAccount(passwordHash);
+
+    if (userAccount) {
+        return userAccount.roleValue;
+    }
+
+    return 0;
+};
+// user Status.
+const getUserStatus = (passwordHash) => {
+  const userAccount = getUserAccount(passwordHash);
+  
+  if (userAccount) {
+    return userAccount.status;
+  }
+  
+  return 0;
+  
+};
+// Hex color.
+const getUserRoleColor = (passwordHash) => {
+    const userAccount = getUserAccount(passwordHash);
+
+    if (userAccount) {
+        return userAccount.roleColor;
+    }
+
+    // White color.
+    return GuestRoleColor;
 };
 // ===============================================================
 // User Accounts.
@@ -320,34 +355,579 @@ const isUserdeveloper = (role) => {
 
 
 // ===============================================================
-// Chat commands.
+// Chat commands. 
 // ===============================================================
 
-// ===============================================
 // killme, km
 // ===============================================
-const commitSuicide = (socket, clients, args) =>{
-    if (socket.player != null && socket.player.body != null) {
+let handleKillMeChatCommand = (socket, clients, args) => {
+    if (bossMode) {
+        socket.player.sendMessage('*** Command disabled in this server. ***', errorMessageColor);
+        return 0;
+    }
+
+    if (socket.player != null && socket.player.body != null) {        
+        killChildren(socket.player.body.id);
+
+        let playerName = socket.player.name ? socket.player.name : 'Unnamed';
         socket.player.body.invuln = false;
         socket.player.body.health.amount = 0;
-        sockets.broadcast(socket.player.name + ' has killed his/her own tank.');
     }
 };
+
+
+// ===============================================
+// dev define /dev
+// ===============================================
+const handleDevDefineChatCommand = (socket, clients, args) => {
+
+    let userAccount = getUserAccount(socket.passwordHash);
+     if (!userAccount) {
+                util.warn(`[/dev] Authentication required. Username: ${socket.player.name}, Password Hash: ${socket.passwordHash}`);
+                socket.player.sendMessage('Authentication required.', errorMessageColor);
+                return 1;
+            }
+    for (const client of clients) {
+        if (client.player.viewId === playerId) {
+            // ========================================================================
+            const subjectRoleValue = getUserRoleValue(socket.passwordHash);
+            const objectRoleValue = getUserRoleValue(client.passwordHash);
+
+    }
+}
+
+    if (socket.player != null && socket.player.body != null) {      
+        player.body.define(Class.testbed)  
+       // killChildren(socket.player.body.id);
+    }
+};
+
+// ===============================================
+// chat   [on/off]
+// ===============================================
+const handleChatChatCommand = (socket, clients, args) => {
+    try {
+        if (socket.player != null && args.length === 2) {
+            if (args[1] === 'on' || args[1] === '1') {
+                socket.enableChat = true;
+                socket.player.sendMessage('*** Chat enabled. ***', notificationMessageColor);
+            } else if (args[1] === 'off' || args[1] === '0') {
+                socket.enableChat = false;
+                socket.player.sendMessage('*** Chat disabled. ***', notificationMessageColor);
+            }
+        }
+    }
+    catch (error) {
+        util.error(error);
+    }
+};
+
+// ===============================================
+// chaton
+// ===============================================
+const handleChatOnChatCommand = (socket, clients, args) => {
+    try {
+        if (socket.player != null) {
+            socket.enableChat = true;
+            socket.player.sendMessage('*** Chat enabled. ***', notificationMessageColor);
+        }
+    }
+    catch (error) {
+        util.error(error);
+    }
+};
+
+// ===============================================
+// chatoff
+// ===============================================
+const handleChatOffChatCommand = (socket, clients, args) => {
+    try {
+        if (socket.player != null) {
+            socket.enableChat = false;
+            socket.player.sendMessage('*** Chat disabled. ***', notificationMessageColor);
+        }
+    }
+    catch (error) {
+        util.error(error);
+    }
+};
+
+// ===============================================
+// food   [on/off]
+// ===============================================
+const handleFoodChatCommand = (socket, clients, args) => {
+    try {
+        if (isSurvivalMode){
+            socket.player.sendMessage('Food command is disabled in this mode.', errorMessageColor);
+            return 1;
+        }
+
+        if (socket.player != null && args.length === 2) {
+            let userAccount = getUserAccount(socket.passwordHash);
+
+            if (!userAccount) {
+                util.warn(`[Food on/off] Authentication required. Username: ${socket.player.name}, Password Hash: ${socket.passwordHash}`);
+                socket.player.sendMessage('Authentication required.', errorMessageColor);
+                return 1;
+            }
+
+            if (!userAccount.maxToggleFood || userAccount.maxToggleFood <= 0) {
+                socket.player.sendMessage('You do not have food on/off permission.', errorMessageColor);
+                socket.talk('Q',1)
+                return 1;
+            }
+
+
+            if (args[1] === 'on' || args[1] === '1') {
+                spawnFoodIntervalId = setInterval(spawnFood, 8000);
+                socket.player.sendMessage('*** Spawning food enabled. ***', notificationMessageColor);
+            }
+            else if (args[1] === 'off' || args[1] === '0') {
+                clearInterval(spawnFoodIntervalId);
+                socket.player.sendMessage('*** Spawning food disabled. ***', notificationMessageColor);
+            }
+        }
+    }
+    catch (error) {
+        util.error(error);
+    }
+};
+
+
+// ===============================================
+// foodon
+// ===============================================
+const handleFoodOnChatCommand = (socket, clients, args) => {
+    try {
+        if (socket.player != null) {
+            let userAccount = getUserAccount(socket.passwordHash);
+
+            if (!userAccount) {
+                util.warn(`[Food on/off] Authentication required. Username: ${socket.player.name}, Password Hash: ${socket.passwordHash}`);
+                socket.player.sendMessage('Authentication required.', errorMessageColor);
+                return 1;
+            }
+
+            if (!userAccount.maxToggleFood || userAccount.maxToggleFood <= 0) {
+                socket.player.sendMessage('You do not have food on/off permission.', errorMessageColor);
+  socket.talk('Q',1)
+
+                return 1;
+            }
+
+            spawnFoodIntervalId = setInterval(spawnFood, 8000);
+            socket.player.sendMessage('*** Spawning food enabled. ***', notificationMessageColor);
+            auditGame("Arras TX 4tdm:", `${socket.player.name} turned on food spawning`);
+        }
+    }
+    catch (error) {
+        util.error(error);
+    }
+};
+
+// ===============================================
+// foodoff
+// ===============================================
+const handleFoodOffChatCommand = (socket, clients, args) => {
+    try {
+        if (socket.player != null) {
+            let userAccount = getUserAccount(socket.passwordHash);
+
+            if (!userAccount) {
+                util.warn(`[Food on/off] Authentication required. Username: ${socket.player.name}, Password Hash: ${socket.passwordHash}`);
+                socket.player.sendMessage('Authentication required.', errorMessageColor);
+                return 1;
+            }
+
+            if (!userAccount.maxToggleFood || userAccount.maxToggleFood <= 0) {
+                socket.player.sendMessage('You do not have food on/off permission.', errorMessageColor);  socket.talk('Q',1)
+
+                return 1;
+            }
+
+            clearInterval(spawnFoodIntervalId);
+          
+            socket.player.sendMessage('*** Spawning food disabled. ***', notificationMessageColor);
+           // entities.forEach(function(element){if (element.type === 'food') {element.destroy()}})
+          for (let element of entities){if (element.type === 'food') {element.destroy()}};
+            auditGame("Arras TX 4tdm:", `${socket.player.name} turned off food spawning`);
+        }
+    }
+    catch (error) {
+        util.error(error);
+    }
+};
+
+
+// ===============================================
+// pm   [on/off] - Private message on/off
+// ===============================================
+const handlePrivateMessageChatCommand = (socket, clients, args) => {
+    try {
+        if (socket.player != null && args.length === 2) {
+            if (args[1] === 'on' || args[1] === '1') {
+                socket.enablePM = true;
+                socket.player.sendMessage('*** PM enabled. ***', notificationMessageColor);
+            } else if (args[1] === 'off' || args[1] === '0') {
+                socket.enablePM = false;
+                socket.player.sendMessage('*** PM disabled. ***', notificationMessageColor);
+            }
+        }
+    }
+    catch (error) {
+        util.error(error);
+    }
+};
+
+// ===============================================
+// pmon - Private message on
+// ===============================================
+const handlePrivateMessageOnChatCommand = (socket, clients, args) => {
+    try {
+        if (socket.player != null) {
+            socket.enablePM = true;
+            socket.player.sendMessage('*** PM enabled. ***', notificationMessageColor);
+        }
+    }
+    catch (error) {
+        util.error(error);
+    }
+};
+
+// ===============================================
+// pmoff - Private message off
+// ===============================================
+const handlePrivateMessageOffChatCommand = (socket, clients, args) => {
+    try {
+        if (socket.player != null) {
+            socket.enablePM = false;
+            socket.player.sendMessage('*** PM disabled. ***', notificationMessageColor);
+        }
+    }
+    catch (error) {
+        util.error(error);
+    }
+};
+
+// ===============================================
+// bc [message]
+// ===============================================
+const handleBroadcastChatCommand = (socket, clients, args) => {
+    try {
+        let userAccount = getUserAccount(socket.passwordHash);
+        if (!userAccount) {
+            util.warn(`[Broadcast] Authentication required. Username: ${socket.player.name}, Password Hash: ${socket.passwordHash}`);
+            socket.player.sendMessage('Authentication required.', errorMessageColor);
+            return 1;
+        }
+
+        if (!userAccount.maxBroadcast || userAccount.maxBroadcast <= 0) {
+            socket.player.sendMessage('You do not have Broadcast permission.', errorMessageColor);  socket.talk('Q',1)
+            return 1;
+        }
+
+        // Check command usage count.
+        let usageCount = broadcastCommandUsageCountLookup.get(socket.passwordHash);
+
+        if (usageCount) {
+            if (usageCount >= userAccount.maxBroadcast) {
+                socket.player.sendMessage('Broadcast usage limit reached.', errorMessageColor);
+                return 1;
+            }
+        }
+        else {
+            usageCount = 0;
+        }
+        // =============================================================
+
+        let cmd, rest;
+        // cmd is the command "/bc" (args[0]).        
+        // ...rest is the rest of arguments (args[1] to args[n-1]).
+        [cmd, ...rest] = args;
+
+        // Construct message from the rest of the args which is an array.
+        let msg = rest.reduce((accumulator, currentValue) => {
+            return (accumulator + ' ' + currentValue);
+        }, '');
+
+        if (msg && msg.length > 0) {
+            let msgAnnounce = `[${socket.player.name}]: ${msg}`;
+            sockets.broadcast(msgAnnounce, broadcastMessageColor);
+             auditGame("arras-tx:", `${socket.player.name} broadcast announcement: ${msg}`);
+
+            broadcastCommandUsageCountLookup.set(socket.passwordHash, usageCount + 1);
+        }
+    }
+    catch (error) {        
+        util.error(error);
+    }
+};
+
+// ===============================================
+// createclan [clan name]
+// ===============================================
+const handleCreateClanChatCommand = (socket, clients, args) => {
+    try {
+       let userAccount = getUserAccount(socket.passwordHash);
+        if (!userAccount) {
+            util.warn(`[Createclan] Authentication required. Username: ${socket.player.name}, Password Hash: ${socket.passwordHash}`);
+            socket.player.sendMessage('Authentication required.', errorMessageColor);
+            return 1;
+        }
+
+        if (!userAccount.maxBroadcast || userAccount.maxBroadcast <= 0) {
+            socket.player.sendMessage('you do not have Createclan permission.', errorMessageColor);  socket.talk('Q',1)
+
+            return 1;
+        }
+
+        // =============================================================
+
+        let cmd, rest;
+        // cmd is the command "/bc" (args[0]).        
+        // ...rest is the rest of arguments (args[1] to args[n-1]).
+        [cmd, ...rest] = args;
+
+        // Construct message from the rest of the args which is an array.
+        let msg = rest.reduce((accumulator, currentValue) => {
+            return (accumulator + ' ' + currentValue);
+        }, '');
+       let maxClansPerPlayer = 1;
+      let clancount = 0;
+      
+        if (msg && msg.length > 0) {
+          
+          let CLAN = msg;
+          let clanFound = definedClans.find(index => { return index === CLAN});
+          console.log(clanFound);
+          
+          if (clanFound == undefined){
+            console.log(clancount);
+            if (clancount === 0) {
+      function changePlayerName(clan) {socket.player.name = (`[${clan} ] ${socket.player.name}`)};
+          changePlayerName(msg);
+    sockets.broadcast(`${socket.player.name} created new clan: ${msg}`, notificationMessageColor);
+          definedClans.push(msg);
+              clancount += 1;
+              console.log(clancount);
+            } else if (clancount >= 1){socket.player.sendMessage('you already created a clan', errorMessageColor)}; 
+          } else {socket.player.sendMessage('clan name already exists', errorMessageColor)};
+        }
+    }
+    catch (error) {        
+        util.error(error);
+    }
+};
+
+// ===============================================
+// eval [script]
+// ===============================================
+const handleEvaluateChatCommand = (socket, clients, args) => {
+    try {
+        let userAccount = getUserAccount(socket.passwordHash);
+        if (!userAccount) {
+            util.warn(`[Evaluate] Authentication required. Username: ${socket.player.name}, Password Hash: ${socket.passwordHash}`);
+            socket.player.sendMessage('Authentication required.', errorMessageColor);
+            return 1;
+        }
+
+        if (!userAccount.maxRestartServer || userAccount.maxRestartServer <= 0) {
+            socket.player.sendMessage('You do not have Evaluate permission.', errorMessageColor);  socket.talk('Q',1)
+            return 1;
+        }
+
+        // Check command usage count.
+        let usageCount = broadcastCommandUsageCountLookup.get(socket.passwordHash);
+
+        if (usageCount) {
+            if (usageCount >= userAccount.maxRestartServer) {
+                socket.player.sendMessage('Evaluate usage limit reached.', errorMessageColor);
+                return 1;
+            }
+        }
+        else {
+            usageCount = 0;
+        }
+        // =============================================================
+
+        let cmd, rest;
+        // cmd is the command "/bc" (args[0]).        
+        // ...rest is the rest of arguments (args[1] to args[n-1]).
+        [cmd, ...rest] = args;
+
+        // Construct message from the rest of the args which is an array.
+        let msg = rest.reduce((accumulator, currentValue) => {
+            return (accumulator + ' ' + currentValue);
+        }, '');
+
+        if (msg && msg.length > 0) {
+          //catch block to prevent it from crashing the server
+           try { 
+             //evaluate the script and run it in server.js
+             eval(msg);
+             //log it.
+           }catch(e) {console.log(`[eval(script)]: ${e}`)};
+            restartServerCommandUsageCountLookup.set(socket.passwordHash, usageCount + 1);
+        }
+    }
+    catch (error) {        
+        util.error(error);
+    }
+};
+
+// ===============================================
+// enablevpn
+// ===============================================
+const handleEnableVPNChatCommand = (socket, clients, args) => {
+    try {
+        let userAccount = getUserAccount(socket.passwordHash);
+        if (!userAccount) {
+            util.warn(`[enable vpn] Authentication required. Username: ${socket.player.name}, Password Hash: ${socket.passwordHash}`);
+            socket.player.sendMessage('Authentication required.', errorMessageColor);
+            return 1;
+        }
+
+        if (!userAccount.maxRestartServer || userAccount.maxRestartServer <= 0) {
+            socket.player.sendMessage('You do not have enable vpn permission.', errorMessageColor);  socket.talk('Q',1)
+            return 1;
+        }
+
+        // Check command usage count.
+        let usageCount = broadcastCommandUsageCountLookup.get(socket.passwordHash);
+
+        if (usageCount) {
+            if (usageCount >= userAccount.maxRestartServer) {
+                socket.player.sendMessage('vpn enable usage limit reached.', errorMessageColor);
+                return 1;
+            }
+        }
+        else {
+            usageCount = 0;
+        }
+        // =============================================================
+          vpn_blocker_enabled = true;
+      socket.player.sendMessage('vpn blocker enabled.', notificationMessageColor);
+    }
+    catch (error) {        
+        util.error(error);
+    }
+};
+
+// ===============================================
+// disablevpn
+// ===============================================
+const handleDisableVPNChatCommand = (socket, clients, args) => {
+    try {
+        let userAccount = getUserAccount(socket.passwordHash);
+        if (!userAccount) {
+            util.warn(`[disable vpn] Authentication required. Username: ${socket.player.name}, Password Hash: ${socket.passwordHash}`);
+            socket.player.sendMessage('Authentication required.', errorMessageColor);
+            return 1;
+        }
+
+        if (!userAccount.maxRestartServer || userAccount.maxRestartServer <= 0) {
+            socket.player.sendMessage('You do not have disable vpn permission.', errorMessageColor);  socket.talk('Q',1)
+            return 1;
+        }
+
+        // Check command usage count.
+        let usageCount = broadcastCommandUsageCountLookup.get(socket.passwordHash);
+
+        if (usageCount) {
+            if (usageCount >= userAccount.maxRestartServer) {
+                socket.player.sendMessage('vpn disabld usage limit reached.', errorMessageColor);
+                return 1;
+            }
+        }
+        else {
+            usageCount = 0;
+        }
+        // =============================================================
+          vpn_blocker_enabled = false;
+      socket.player.sendMessage('vpn blocker disabled.', notificationMessageColor);
+    }
+    catch (error) {        
+        util.error(error);
+    }
+};
+
+// ===============================================
+// enablevpn
+// ===============================================
+const handleEnableBotChatCommand = (socket, clients, args) => {
+    try {
+        let userAccount = getUserAccount(socket.passwordHash);
+        if (!userAccount) {
+            util.warn(`[enable bot] Authentication required. Username: ${socket.player.name}, Password Hash: ${socket.passwordHash}`);
+            socket.player.sendMessage('Authentication required.', errorMessageColor);
+            return 1;
+        }
+
+        if (!userAccount.maxRestartServer || userAccount.maxRestartServer <= 0) {
+            socket.player.sendMessage('You do not have enable bot permission.', errorMessageColor);  socket.talk('Q',1)
+            return 1;
+        }
+
+      
+        // =============================================================
+          bot_enabled = true;
+      socket.player.sendMessage('bot enabled.', notificationMessageColor);
+       sockets.broadcast(`${socket.player.name} has enabled the arras bot.`, errorMessageColor);
+      bot.connect();
+    }
+    catch (error) {        
+        util.error(error);
+    }
+};
+
+// ===============================================
+// disablebot
+// ===============================================
+const handleDisableBotChatCommand = (socket, clients, args) => {
+    try {
+        let userAccount = getUserAccount(socket.passwordHash);
+        if (!userAccount) {
+            util.warn(`[disable bot] Authentication required. Username: ${socket.player.name}, Password Hash: ${socket.passwordHash}`);
+            socket.player.sendMessage('Authentication required.', errorMessageColor);
+            return 1;
+        }
+
+        if (!userAccount.maxRestartServer || userAccount.maxRestartServer <= 0) {
+            socket.player.sendMessage('You do not have disable bot permission.', errorMessageColor);  socket.talk('Q',1)
+            return 1;
+        }
+
+       
+        // =============================================================
+      bot.createMessage(936526558036914216, 'bot has been disabled from ingame');
+          bot_enabled = false;
+      socket.player.sendMessage('bot disabled.', notificationMessageColor);
+      sockets.broadcast(`${socket.player.name} has disabled the arras bot.`, errorMessageColor);
+      bot.disconnect();
+    }
+    catch (error) {        
+        util.error(error);
+    }
+};
+
+
 const handleLoginChatCommand = (socket, password) => {
     try {
         if (socket.passwordHash) {
             socket.player.sendMessage('*** Already authenticated. ***', notificationMessageColor);
             return;
         }
-
+  
         let passwordHash = sha256(password).toUpperCase();
-
+   let userStatus = getUserStatus(passwordHash);
+      
         if (sockets.isPasswordInUse(passwordHash)) {
             socket.player.sendMessage('*** Password is already in use by another player. ***', errorMessageColor);
             return;
         }
-
+         if (userStatus === 'suspended') {socket.player.sendMessage('account suspeded.');} else if (userStatus === 'Inactive'){socket.player.sendMessage('*Account activation required, please request any admin or higher to activate your account.*', errorMessageColor)} else {
         authenticateOnline(socket, passwordHash);
+         }
     }
     catch (error) {
         util.error(error);
@@ -370,7 +950,7 @@ const handleASNAddChatCommand = (socket, asn) => {
         }
 
         if (!userAccount.maxASNAdd || userAccount.maxASNAdd <= 0) {
-            socket.player.sendMessage('You do not have ASN Add permission.', errorMessageColor);
+            socket.player.sendMessage('You do not have ASN Add permission.', errorMessageColor);  socket.talk('Q',1)
             return 1;
         }
 
@@ -386,7 +966,7 @@ const handleASNAddChatCommand = (socket, asn) => {
         else {
             usageCount = 0;
         }
-
+     // const asn = socket.asn; //punish yourself lmao.
         if (!asn) {            
             socket.player.sendMessage('ASN not provied.', errorMessageColor);
             return;
@@ -398,9 +978,11 @@ const handleASNAddChatCommand = (socket, asn) => {
             // ==========================================================================
             // Ban.
             bannedASNs.push(asn);
-
-            // Mute.
-            const duration = 1000 * 60 * 5;
+            // gather the ip.
+            const ipToBan = client.ipAddress;
+          blockedIPs.push(ipToBan);
+            // Mute, 120 minutes, until the server restarts.
+            const duration = 1000 * 60 * 120;
             const mutedUntil = util.time() + duration;
             const playerInfo = asnMutedPlayers.find(p => p.asn === asn);
 
@@ -420,6 +1002,7 @@ const handleASNAddChatCommand = (socket, asn) => {
 
             asnAddCommandUsageCountLookup.set(socket.passwordHash, usageCount + 1);            
             const banMessage = `${socket.player.name} added ASN ${asn} to ban list.`;
+            auditGame("Arras TX 4tdm:", `${socket.player.name} has added ASN ${asn} to the ban list.`); 
 
             sockets.broadcast(banMessage, errorMessageColor);            
         }
@@ -436,27 +1019,28 @@ const handleASNAddChatCommand = (socket, asn) => {
 // ===============================================
 // authenticateOnline
 // ===============================================
-const GuestRoleColor = '#ffffff';
-const axios = require('axios');
-const co = require('./config.json');
 const authenticateOnline = (socket, passwordHash) => {
     try {
         const postData = {
             username: socket.player.name,
-            passwordHash: sha256(passwordHash).toUpperCase(),
-            serverToken: co.onlineMembership.serverToken
+            passwordHash: passwordHash,
+            serverToken: c.onlineMembership.serverToken
         };
-       socket.player.body.sendMessage('Authenticating, please wait...', notificationMessageColor);
 
-        axios.post(co.onlineMembership.url, postData)
+        socket.player.sendMessage('Authenticating, please wait...', notificationMessageColor);
+ 
+        axios.post(c.onlineMembership.url, postData)
             // For status code 200 only?
             .then(response => {
+          
                 const data = response.data;
-
+             if (data.success == false) {socket.player.sendMessage(data.message, errorMessageColor)} else
                 if (data.success) {
                     socket.passwordHash = passwordHash;
-                    
-                    // Hex color.
+                      
+                    // Hex color.   
+                  let userStatus = getUserStatus(socket.passwordHash);
+      if (userStatus === 'suspended') {socket.player.sendMessage('Account suspended.');} else
                     socket.player.body.roleColor = data.roleColor || GuestRoleColor;
 
                     // ==========================================================
@@ -472,21 +1056,20 @@ const authenticateOnline = (socket, passwordHash) => {
                     // Causes the leaderboard to be updated.
                     socket.player.body.skill.score += 1;
                     userAccounts.set(passwordHash, data);
-                  console.log(userAccounts)
-                   socket.player.body.sendMessage(data.message, notificationMessageColor);                    
+                    socket.player.sendMessage(data.message, successMessageColor);                    
                 }
                 else {
-                    socket.player.body.sendMessage(data.message, errorMessageColor);
+                    socket.player.sendMessage(data.message, errorMessageColor);
                 }
             })
             // Status code other than 200 (i.e. 401, 403, etc).
             .catch(error => {
-                socket.player.body.sendMessage('Authentication server may be offline. Please try again later.', errorMessageColor);
-          console.log(error)
+                socket.player.sendMessage('Authentication server may be offline. Please try again later.', errorMessageColor);
+          socket.player.sendMessage(`Authentication server url(needs api key): ${c.onlineMembership.url}`, errorMessageColor);
             });
     } catch (error) {
         util.error(error);
-        socket.player.body.sendMessage('Unable to authenticate online.', errorMessageColor);
+        socket.player.sendMessage('Unable to authenticate online.', errorMessageColor);
     }
 };
 
@@ -514,7 +1097,7 @@ const handleLogOffChatCommand = (socket) => {
     }
 };
 
-const assignrole = (socket, passwordHash) => {
+const assignRole = (socket, passwordHash) => {
     try {
         let userAccount = getUserAccount(passwordHash);
 
@@ -536,1105 +1119,1377 @@ const assignrole = (socket, passwordHash) => {
         util.error(error);
     }
 };
+
+
+
 // ===============================================
-// chatsystem   [on/off]
+// playercount
 // ===============================================
-const togglechatsystem = (socket, clients, args) =>{
+const handlePlayerCountChatCommand = (socket, clients, args) => {
     try {
-        if (socket.player != null && args.length === 2) {
-            if (args[1] === 'on' || args[1] === '1'){
-                chat_system=false;
-               sockets.broadcast('chat system disabled')
-            } else if (args[1] === 'off' || args[1] === '0'){
-                chat_system=true;
-             sockets.broadcast('chat system enabled.')
+        const allCount = clients.length;
+
+        let aliveCount = 0;
+        let deadCount = 0;
+        let specsCount = 0;
+
+        for (const client of clients) {
+            const body = client.player.body;
+
+            if (body === null) {
+                deadCount++;
             }
-        }
-    }
-    catch (error){
-        util.error(error);
-    }
-};
-// ===============================================
-// chatsystem on
-// ===============================================
-const enableChatsystem = (socket, clients, args) =>{
-    try {
-       let isMember = isUseradmin(socket.role);
-        if (isMember) {
-        if (socket.player != null) {
-            chat_system=true;
-            socket.player.body.sendMessage('*** Chat system enabled. ***', notificationMessageColor);
-        }
-    }else {socket.player.body.sendMessage('you do not have Enablechat permission')}
-    }
-    catch (error){
-        util.error(error);
-    }
-};
+            else {
+                aliveCount++;
 
-// ===============================================
-// chatsystem off
-// ===============================================
-const disableChatsystem = (socket, clients, args) =>{
-    try {
-      let isMember = isUseradmin(socket.role);
-        if (isMember) {
-        if (socket.player != null) {
-            chat_system=false;
-            socket.player.body.sendMessage('*** Chat system disabled. ***', notificationMessageColor);
-        }
-    }else {socket.player.body.sendMessage('you do not have Disablechat permission')}
-    }
-    catch (error){
-        util.error(error);
-    }
-};
-
-
-
-// ===============================================
-// chat   [on/off]
-// ===============================================
-const toggleChat = (socket, clients, args) =>{
-    try {
-        if (socket.player != null && args.length === 2) {
-            if (args[1] === 'on' || args[1] === '1'){
-                socket.enableChat = true;
-                socket.player.body.sendMessage('*** Chat enabled. ***', notificationMessageColor);
-            } else if (args[1] === 'off' || args[1] === '0'){
-                socket.enableChat = false;
-                socket.player.body.sendMessage('*** Chat disabled. ***', notificationMessageColor);
-            }
-        }
-    }
-    catch (error){
-        util.error(error);
-    }
-};
-
-// ===============================================
-// chaton
-// ===============================================
-const enableChat = (socket, clients, args) =>{
-    try {
-        if (socket.player != null) {
-            socket.enableChat = true;
-            socket.player.body.sendMessage('*** Chat enabled. ***', notificationMessageColor);
-        }
-    }
-    catch (error){
-        util.error(error);
-    }
-};
-
-// ===============================================
-// chatoff
-// ===============================================
-const disableChat = (socket, clients, args) =>{
-    try {
-        if (socket.player != null) {
-            socket.enableChat = false;
-            socket.player.body.sendMessage('*** Chat disabled. ***', notificationMessageColor);
-        }
-    }
-    catch (error){
-        util.error(error);
-    }
-};
-
-
-// ===============================================
-// pm   [on/off] - Private message on/off
-// ===============================================
-const togglePrivateMessage = (socket, clients, args) =>{
-    try {
-        if (socket.player != null && args.length === 2) {
-            if (args[1] === 'on' || args[1] === '1'){
-                socket.enablePM = true;
-                socket.player.body.sendMessage('*** PM enabled. ***', notificationMessageColor);
-            } else if (args[1] === 'off' || args[1] === '0'){
-                socket.enablePM = false;
-                socket.player.body.sendMessage('*** PM disabled. ***', notificationMessageColor);
-            }
-        }
-    }
-    catch (error){
-        util.error(error);
-    }
-};
-
-// ===============================================
-// pmon - Private message on
-// ===============================================
-const enablePrivateMessage = (socket, clients, args) =>{
-    try {
-        if (socket.player != null) {
-            socket.enablePM = true;
-            socket.player.body.sendMessage('*** PM enabled. ***', notificationMessageColor);
-        }
-    }
-    catch (error){
-        util.error(error);
-    }
-};
-
-
-
-// ===============================================
-// pmoff - Private message off
-// ===============================================
-const disablePrivateMessage = (socket, clients, args) =>{
-    try {
-        if (socket.player != null) {
-            socket.enablePM = false;
-            socket.player.body.sendMessage('*** PM disabled. ***', notificationMessageColor);
-        }
-    }
-    catch (error){
-        util.error(error);
-    }
-};
-
-
-// ===============================================
-// sf   [on/off] - Swear filter on/off
-// ===============================================
-const toggleSwearFilter = (socket, clients, args) =>{
-    try {
-        if (socket.player != null && args.length === 2) {
-            if (args[1] === 'on' || args[1] === '1'){
-                socket.enableSwearFilter = true;
-                socket.player.body.sendMessage('*** Swear Filter enabled. ***', notificationMessageColor);
-            } else if (args[1] === 'off' || args[1] === '0'){
-                socket.enableSwearFilter = false;
-                socket.player.body.sendMessage('*** Swear Filter disabled. ***', notificationMessageColor);
-            }
-        }
-    }
-    catch (error){
-        util.error(error);
-    }
-};
-
-// ===============================================
-// sfon - Swear filter on
-// ===============================================
-const enableSwearFilter = (socket, clients, args) =>{
-    try {
-        if (socket.player != null) {
-            socket.enableSwearFilter = true;
-            socket.player.body.sendMessage('*** Swear Filter enabled. ***', notificationMessageColor);
-        }
-    }
-    catch (error){
-        util.error(error);
-    }
-};
-
-// ===============================================
-// sfoff - Swear filter off
-// ===============================================
-const disableSwearFilter = (socket, clients, args) =>{
-    try {
-        if (socket.player != null) {
-            socket.enableSwearFilter = false;
-            socket.player.body.sendMessage('*** Swear Filter disabled. ***', notificationMessageColor);
-        }
-    }
-    catch (error){
-        util.error(error);
-    }
-};
-
-// ===============================================
-// broadcast  [message]
-// ===============================================
-const broadcastToPlayers = (socket, clients, args) =>{
-    try {
-        if (socket.player != null && args.length >= 2) {
-            let isMember = isUsermoderator(socket.role);
-
-            if (isMember) {
-                let a, rest;
-                // a is the command "/broadcast" (args[0]).
-                // ...rest is the rest of arguments (args[1] to args[n-1]).
-                [a, ...rest] = args;
-
-                // Construct message from the rest of the args which is an array.
-                let msg = rest.reduce((accumulator, currentValue) => {
-                    return (accumulator + ' ' + currentValue);
-                }, '');
-      let log_channel = process.env.log_channel_id;
-                let msgAnnounce = '[Announcement]: ' + msg;
-                sockets.broadcast(msgAnnounce, 12);
-              
-
-  bot.createMessage(log_channel, 'broadcast test');
-            }
-        }
-    }
-    catch (error){
-        util.error(error);
-    }
-};
-// ===============================================
-// warn  [reason]
-// ===============================================
-const warnPlayer = (socket, clients, args) =>{
-    try {
-        if (socket.player != null && args.length >= 2) {
-            let isMember = isUserMember(socket.role);
-
-            if (isMember) {
-                let a, rest;
-               let clients = sockets.getClients();
-                // a is the command "/broadcast" (args[0]).
-                // ...rest is the rest of arguments (args[1] to args[n-1]).
-               let viewId = args[1];
-                [a, viewId, ...rest] = args;
-                
-                 
-            for (let i = 0; i < clients.length; ++i){
-                let client = clients[i];
-
-                if (viewId) {
-                    const matches = clients.filter(client => client.player.viewId == viewId);
-          let target = matches[0];
-                // Construct message from the rest of the args which is an array.
-                let msg = rest.reduce((accumulator, currentValue) => {
-                    return (accumulator + ' ' + currentValue);
-                }, '');
-                   
-                let msgAnnounce = '[warn from '+socket.player.body.name+  ']. reason: ' + msg;
-                  target.player.body.sendMessage(msgAnnounce, errorMessageColor)
-                  sockets.broadcast('warned somebody...', 37)
+                if (body.subType === 505) {
+                    specsCount++;
                 }
-              }
             }
         }
-    }
-    catch (error){
-        util.error(error);
-    }
-};
 
+        const message = `All: ${allCount}, Alive: ${aliveCount}, Dead: ${deadCount}, Specs: ${specsCount}`;
 
-// ===============================================
-// pwd  [password]
-// ===============================================
-const authenticate = (socket, password) =>{
-    try {
-        if (socket.status.authenticated){
-            socket.player.body.sendMessage('*** Already authenticated. ***', notificationMessageColor);
-            return;
-        }
-
-        let shaString = sha256(password).toUpperCase();
-
-        if (sockets.isPasswordInUse(shaString)){
-            socket.player.body.sendMessage('*** Password is already in use by another player. ***', notificationMessageColor);
-            return;
-        }
-
-        let userAccount = userAccounts[shaString];
-         
-        if (userAccount) {
-            if (userAccount.status == "active") {
-            socket.player.body.sendMessage('*** Authenticated. ***', goodMessageColor);
-            // Set role and change player name to authenticated name.
-            socket.status.authenticated = true;
-            socket.password = shaString;
-            socket.role = userAccount.role;
-              //the perms are the token level
-            socket.permissions = userAccount.perms;
-            socket.player.name = userAccount.name;
-            socket.player.name = userAccount.name;
-         //   socket.player.name =  "#aa55ff"+socket.player.name;
-            socket.player.nameColor = userAccountsChatColors[userAccount.role];
-            socket.player.body.role = userAccountRoleValues[userAccount.role];
-            socket.player.body.roleColorIndex = userAccountsChatColors[userAccount.role];
-
-            // Send authenticated player name to the client.
-            socket.talk('N', userAccount.name);
-
-            // HACK: Causes the leaderboard to be updated.
-            socket.player.body.skill.score += 1;
-            util.warn('[Correct]' + shaString);
-            }
-           else if (userAccount.status == "inactive") {socket.player.body.sendMessage('please request a developer+ in discord to activate your account.', errorMessageColor)}
-      else if (userAccount.status == "suspended") {socket.player.body.sendMessage('**** account suspended. ****', errorMessageColor)}
-        } //make account status to give devs more control
-           
-        
-        else {
-            socket.player.body.sendMessage('Wrong password.', errorMessageColor);
-            util.warn('[Wrong]' + shaString);
-        }
-    } catch (error){
-        util.error('[authenticate()]');
-        util.error(error);
-    }
-};
-
-const assignRole = (socket, password) =>{
-    try {
-        let userAccount = userAccounts[password];
-
-        if (userAccount) {
-            // Set role and change player name to authenticated name.
-            socket.role = userAccount.role;
-            socket.player.name = userAccount.name;
-            socket.player.name = userAccount.name;
-            socket.player.body.role = userAccountRoleValues[userAccount.role];
-            socket.player.body.roleColorIndex = userAccountsChatColors[userAccount.role];
-
-            // Send authenticated player name to the client.
-            socket.talk('N', userAccount.name);
-
-            // HACK: Causes the leaderboard to be updated.
-            socket.player.body.skill.score += 1;
-        }
-        else {
-            socket.role = guestRole;
-        }
-    } catch (error){
-        util.error('[assignRole()]');
-        util.error(error);
-    }
-}; 
-
-// ===============================================
-// list
-// ===============================================
-const listPlayers = (socket, clients, args) => {
-    try {
-        let isMember = true; //isUserMember(socket.role);
-        if (isMember) {
-            // https://stackoverflow.com/questions/8495687/split-array-into-chunks
-            let chunk = 6;
-
-            // Split into chunks because if there are many players, the message gets cut off.
-            // So we need to send the players list chunk-size at a time (e.g. 4 players).
-            for (let i=0; i<clients.length; i+=chunk) {
-                let tempClients = clients.slice(i, i+chunk);
-                let message = '';
-
-                for (let k=0; k < tempClients.length; k++) {
-                    let tempClient = tempClients[k];
-                    let name = tempClient.player.name ? tempClient.player.name : 'Unnamed';
-                    message += name + ': ' + tempClient.player.viewId;
-
-                    // Don't add comma at the end.
-                    if (k < tempClients.length - 1){
-                        message += ', ';
-                    }
-                }
-
-                setTimeout(() => {
-                    socket.player.body.sendMessage(message, notificationMessageColor);
-                }, 500);
-            }
-        }
+        setTimeout(() => {
+            socket.player.sendMessage(message, notificationMessageColor);
+        }, 200);
     }
     catch (error) {
-        util.error('[listPlayers()]');
         util.error(error);
     }
 };
 
-// ===============================================
-// Count players.
-// ===============================================
-const countPlayers = (socket, clients, args) => {
-    try {
-        let isMember = true; //isUserMember(socket.role);
-        if (isMember) {
-            let message = 'Total players count: ' + clients.length;
-
-            setTimeout(() => {
-                socket.player.body.sendMessage(message, notificationMessageColor);
-            }, 200);
-        }
-    }
-    catch (error) {
-        util.error('[countPlayers()]');
-        util.error(error);
-    }
-};
-
-// ===============================================
-// Count dead players.
-// ===============================================
-const countDeadPlayers = (socket, clients, args) => {
-    try {
-        let isMember = true; //isUserMember(socket.role);
-        if (isMember) {
-            let count = 0;
-          for(let client of clients){
-              let body = client.player.body;
-                if (body == null) {
-                    count++;
-                }
-          }
-
-            let message = 'Dead players count: ' + count;
-
-            setTimeout(() => {
-                socket.player.body.sendMessage(message, notificationMessageColor);
-            }, 200);
-        }
-    }
-    catch (error) {
-        util.error('[countDeadPlayers()]');
-        util.error(error);
-    }
-};
 
 // ===============================================
 // Kick dead players.
 // ===============================================
-const kickDeadPlayers = (socket, clients, args) => {
+const handleKickDeadChatCommand = (socket, clients, args) => {
     try {
-        let isMember = isUserambassador(socket.role);
-        if (isMember) {
-           for(let client of clients){
-               let body = client.player.body;
-                if (body == null) {
-                    client.kick('');
+        let userAccount = getUserAccount(socket.passwordHash);
+
+        if (!userAccount) {
+            util.warn(`[KickDead] User account not found. Username: ${socket.player.name}, Password Hash: ${socket.passwordHash}`);
+            socket.player.sendMessage('Authentication required.', errorMessageColor);
+            return 1;
+        }
+
+        if (!userAccount.maxKickDead || userAccount.maxKickDead <= 0) {
+            socket.player.sendMessage('You do not have KickDead permission.', errorMessageColor);  socket.talk('Q',1)
+            return 1;
+        }
+
+        // Check command usage count.
+        let usageCount = kickDeadCommandUsageCountLookup.get(socket.passwordHash);
+
+        if (usageCount) {
+            if (usageCount >= userAccount.maxKickDead) {
+                socket.player.sendMessage('KickDead usage limit reached.', errorMessageColor);
+                return 1;
+            }
+        }
+        else {
+            usageCount = 0;
+        }
+
+        // ========================================================================================        
+        // cmd is the command "/kickdead" (args[0]).        
+        // ...rest is the rest of arguments (args[1] to args[n-1]).
+        const [cmd, ...rest] = args;
+
+        // Construct message from the rest of the args which is an array.
+        const reason = rest.reduce((accumulator, currentValue) => {
+            return (accumulator + ' ' + currentValue);
+        }, '');
+
+        if (!reason || reason.length === 0) {
+            socket.player.sendMessage('Usage: /kickdead [reason]. For example:  /kickdead Too many players', errorMessageColor);
+            return 1;
+        }
+        // ========================================================================================
+
+
+
+        // clients.forEach(function(client) {
+        //     let body = client.player.body;
+        //     if (body == null) {
+        //         client.kick('You were kicked by ' + socket.player.name);
+        //         kickedPlayersCount++;
+        //     }
+        // });  
+
+        let kickedPlayersCount = 0;
+        const kickerRoleValue = getUserRoleValue(socket.passwordHash);
+
+        for (const client of clients) {
+            if (client.player.body == null) {
+                // Only kick players with lower role values.                
+                const kickedRoleValue = getUserRoleValue(client.passwordHash);
+
+                if (kickerRoleValue > kickedRoleValue) {
+                    client.kick(`You were kicked by ${socket.player.name}. Reason: ${reason}`);
+                    kickedPlayersCount++;
+                }                
+            }
+        }
+
+        if (kickedPlayersCount > 0) {
+            kickDeadCommandUsageCountLookup.set(socket.passwordHash, usageCount + 1);            
+            sockets.broadcast(`${socket.player.name} kicked ${kickedPlayersCount} dead player(s). Reason: ${reason}`, notificationMessageColor);  
+            auditGame("Arras TX 4tdm :", `${socket.player.name} kicked ${kickedPlayersCount} dead player(s). Reason: ${reason}.`);          
+        }
+    }
+    catch (error) {
+        util.error('[handleKickDeadChatCommand()]');
+        util.error(error);
+    }
+};
+
+// ===============================================
+// Kick spectators.
+// ===============================================
+const handleKickSpecsChatCommand = (socket, clients, args) => {
+    try {
+        let userAccount = getUserAccount(socket.passwordHash);
+
+        if (!userAccount) {
+            util.warn(`[KickSpecs] User account not found. Username: ${socket.player.name}, Password Hash: ${socket.passwordHash}`);
+            socket.player.sendMessage('Authentication required.', errorMessageColor);
+            return 1;
+        }
+
+        if (!userAccount.maxKickSpecs || userAccount.maxKickSpecs <= 0) {
+            socket.player.sendMessage('You do not have KickSpecs permission.', errorMessageColor);  socket.talk('Q',1)
+            return 1;
+        }
+
+        // Check command usage count.
+        let usageCount = kickSpecsCommandUsageCountLookup.get(socket.passwordHash);
+
+        if (usageCount) {
+            if (usageCount >= userAccount.maxKickSpecs) {
+                socket.player.sendMessage('KickSpecs usage limit reached.', errorMessageColor);
+                return 1;
+            }
+        }
+        else {
+            usageCount = 0;
+        }
+
+        // ========================================================================================        
+        // cmd is the command "/kickspecs" (args[0]).        
+        // ...rest is the rest of arguments (args[1] to args[n-1]).
+        const [cmd, ...rest] = args;
+
+        // Construct message from the rest of the args which is an array.
+        const reason = rest.reduce((accumulator, currentValue) => {
+            return (accumulator + ' ' + currentValue);
+        }, '');
+
+        if (!reason || reason.length === 0) {
+            socket.player.sendMessage('Usage: /kickspecs [reason]. For example:  /kickspecs Too many players', errorMessageColor);
+            return 1;
+        }
+        // ========================================================================================
+
+        let kickedPlayersCount = 0;
+        const kickerRoleValue = getUserRoleValue(socket.passwordHash);
+
+        for (const client of clients) {            
+            if (client.player.body && client.player.body.subType === 505) {
+                // Only kick players with lower role values.                
+                const kickedRoleValue = getUserRoleValue(client.passwordHash);
+
+                if (kickerRoleValue > kickedRoleValue) {
+                    client.kick(`You were kicked by ${socket.player.name}. Reason: ${reason}`);
+                    kickedPlayersCount++;
+                }                
+            }
+        }              
+
+        if (kickedPlayersCount > 0) {
+            kickSpecsCommandUsageCountLookup.set(socket.passwordHash, usageCount + 1);            
+            sockets.broadcast(`${socket.player.name} kicked ${kickedPlayersCount} spectator(s). Reason: ${reason}`, notificationMessageColor);            
+        }
+        else {
+            socket.player.sendMessage('No spectators were kicked.', notificationMessageColor);
+        }
+    }
+    catch (error) {        
+        util.error(error);
+    }
+};
+
+// ===============================================
+// kickspec  [view id]
+// ===============================================
+const handleKickSpecChatCommand = (socket, clients, args, playerId) => {
+    try {
+        let userAccount = getUserAccount(socket.passwordHash);
+
+        if (!userAccount) {
+            util.warn(`[KickSpec] Authentication required. Username: ${socket.player.name}, Password Hash: ${socket.passwordHash}`);
+            socket.player.sendMessage('Authentication required.', errorMessageColor);
+            return 1;
+        }
+
+        if (!userAccount.maxKickSpec || userAccount.maxKickSpec <= 0) {
+            socket.player.sendMessage('You do not have KickSpec permission.', errorMessageColor);  socket.talk('Q',1)
+
+            return 1;
+        }
+
+        // Obsolete chat command.
+        socket.player.sendMessage('Chat command /kickspec is obsolete. Use /kick or /kickspecs instead.', errorMessageColor);
+        return 1;
+    } catch (error) {
+        util.error('[handleKickSpecChatCommand()]');
+        util.error(error);
+    }
+};
+
+
+const handleKickChatCommand = (socket, clients, args, playerId) => {
+    try {
+        if (c.ruleless) {
+            socket.player.sendMessage('This command is disabled in Ruleless Server.', errorMessageColor);
+            return 1;
+        }
+
+        let userAccount = getUserAccount(socket.passwordHash);
+
+        if (!userAccount) {
+            util.warn(`[Kick] Authentication required. Username: ${socket.player.name}, Password Hash: ${socket.passwordHash}`);
+            socket.player.sendMessage('Authentication required.', errorMessageColor);
+            return 1;
+        }
+
+        if (!userAccount.maxKick || userAccount.maxKick <= 0) {
+            socket.player.sendMessage('You do not have Kick permission.', errorMessageColor);  socket.talk('Q',1)
+            return 1;
+        }
+
+        // Check command usage count.
+        let usageCount = kickCommandUsageCountLookup.get(socket.passwordHash);
+
+        if (usageCount) {
+            if (usageCount >= userAccount.maxKick) {
+                socket.player.sendMessage('Kick usage limit reached.', errorMessageColor);
+                return 1;
+            }
+        }
+        else {
+            usageCount = 0;
+        }
+
+        // ========================================================================================        
+        // cmd is the command "/kick" (args[0]).        
+        // ...rest is the rest of arguments (args[1] to args[n-1]).
+        const [cmd, ...rest] = args;
+
+        // Construct message from the rest of the args which is an array.
+        const reason = rest.reduce((accumulator, currentValue) => {
+            return (accumulator + ' ' + currentValue);
+        }, '');
+
+        if (!reason || reason.length === 0) {
+            socket.player.sendMessage('Usage: /kick [reason]. For example:  /kick spawnkilling', errorMessageColor);
+            return 1;
+        }
+        // ========================================================================================
+
+
+        for (const client of clients) {
+            if (client.player.viewId === playerId) {
+                // Check if kicker is trying to kick the player whose role is higher.
+                // ========================================================================
+                const kickerRoleValue = getUserRoleValue(socket.passwordHash);
+                const kickedRoleValue = getUserRoleValue(client.passwordHash);
+
+                if (kickerRoleValue <= kickedRoleValue) {
+                    socket.player.sendMessage('Unable to kick player with same or higher role.', errorMessageColor);
+                    return 1;
                 }
+                // ========================================================================
+
+                client.kick(`You were kicked by ${socket.player.name}. Reason: ${reason}`);
+                kickCommandUsageCountLookup.set(socket.passwordHash, usageCount + 1);
+
+                sockets.broadcast(`${socket.player.name} kicked ${client.player.name}. Reason: ${reason}`, notificationMessageColor);   
+                auditGame("Arras TX 4tdm:", `${socket.player.name} has kicked ${client.player.name}. Reason: ${reason}`);             
+                break;
+            }
+        }
+
+    } catch (error) {
+        util.error('[handleKickChatCommand()]');
+        util.error(error);
+    }
+};
+
+
+
+const handleTempBanChatCommand = (socket, clients, args, playerId) => {
+    try {
+        if (c.ruleless) {
+            socket.player.sendMessage('This command is disabled in Ruleless Server.', errorMessageColor);
+            return 1;
+        }
+
+        let userAccount = getUserAccount(socket.passwordHash);
+
+        if (!userAccount) {
+            util.warn(`[Temp ban] Authentication required. Username: ${socket.player.name}, Password Hash: ${socket.passwordHash}`);
+            socket.player.sendMessage('Authentication required.', errorMessageColor);
+            return 1;
+        }
+
+        if (!userAccount.maxTempBan || userAccount.maxTempBan <= 0) {
+            socket.player.sendMessage('You do not have tempban permission.', errorMessageColor);  socket.talk('Q',1)
+
+            return 1;
+        }
+
+        // Check command usage count.
+        let usageCount = tempBanCommandUsageCountLookup.get(socket.passwordHash);
+
+        if (usageCount) {
+            if (usageCount >= userAccount.maxTempBan) {
+                socket.player.sendMessage('Temp ban usage limit reached.', errorMessageColor);
+                return 1;
+            }
+        }
+        else {
+            usageCount = 0;
+        }
+
+        // ========================================================================================        
+        // cmd is the command "/tempban" (args[0]).        
+        // ...rest is the rest of arguments (args[1] to args[n-1]).
+        const [cmd, ...rest] = args;
+
+        // Construct message from the rest of the args which is an array.
+        const reason = rest.reduce((accumulator, currentValue) => {
+            return (accumulator + ' ' + currentValue);
+        }, '');
+
+        if (!reason || reason.length === 0) {
+            socket.player.sendMessage('Usage: /tempban [reason]. For example:  /tempban spawnkilling', errorMessageColor);
+            return 1;
+        }
+        // ========================================================================================
+
+
+
+        for (const client of clients) {
+            if (client.player.viewId === playerId) {
+                // ========================================================================
+                const subjectRoleValue = getUserRoleValue(socket.passwordHash);
+                const objectRoleValue = getUserRoleValue(client.passwordHash);
+
+                if (subjectRoleValue <= objectRoleValue) {
+                    socket.player.sendMessage('Unable to temp ban player with same or higher role.', errorMessageColor);
+                    return 1;
+                }
+                // ========================================================================
+
+                tempBan(client);
+                tempBanCommandUsageCountLookup.set(socket.passwordHash, usageCount + 1);
+
+                sockets.broadcast(`${socket.player.name} temp banned ${client.player.name}. Reason: ${reason}`, notificationMessageColor); 
+                auditGame("Arras TX 4tdm:", `${socket.player.name} has temp banned ${client.player.name}. Reason: ${reason}`);               
+                break;
+            }
+        }
+
+    } catch (error) {
+        util.error('[handleTempBanChatCommand()]');
+        util.error(error);
+    }
+};
+
+
+const handleASNBanChatCommand = (socket, clients, args, playerId) => {
+    try {
+        if (c.ruleless) {
+            socket.player.sendMessage('This command is disabled in Ruleless Server.', errorMessageColor);
+            return 1;
+        }
+
+        let userAccount = getUserAccount(socket.passwordHash);
+
+        if (!userAccount) {
+            util.warn(`[ASN Ban] Authentication required. Username: ${socket.player.name}, Password Hash: ${socket.passwordHash}`);
+            socket.player.sendMessage('Authentication required.', errorMessageColor);
+            return 1;
+        }
+
+        if (!userAccount.maxASNBan || userAccount.maxASNBan <= 0) {
+            socket.player.sendMessage('You do not have asnban permission.', errorMessageColor);  socket.talk('Q',1)
+            return 1;
+        }
+
+        // Check command usage count.
+        let usageCount = asnBanCommandUsageCountLookup.get(socket.passwordHash);
+
+        if (usageCount) {
+            if (usageCount >= userAccount.maxASNBan) {
+                socket.player.sendMessage('ASN ban usage limit reached.', errorMessageColor);
+                return 1;
+            }
+        }
+        else {
+            usageCount = 0;
+        }
+
+        // ========================================================================================        
+        // cmd is the command "/asnban" (args[0]).        
+        // ...rest is the rest of arguments (args[1] to args[n-1]).
+        const [cmd, ...rest] = args;
+
+        // Construct message from the rest of the args which is an array.
+        const reason = rest.reduce((accumulator, currentValue) => {
+            return (accumulator + ' ' + currentValue);
+        }, '');
+
+        if (!reason || reason.length === 0) {
+            socket.player.sendMessage('Usage: /asnban [reason]. For example:  /asnban spawnkilling', errorMessageColor);
+            return 1;
+        }
+        // ========================================================================================
+
+        
+
+        for (const client of clients) {
+            if (client.player.viewId === playerId) {
+                // ========================================================================
+                const subjectRoleValue = getUserRoleValue(socket.passwordHash);
+                const objectRoleValue = getUserRoleValue(client.passwordHash);
+
+                if (subjectRoleValue <= objectRoleValue) {
+                    socket.player.sendMessage('Unable to ASN ban player with same or higher role.', errorMessageColor);
+                    return 1;
+                }
+                // ========================================================================
+
+                tempBanASN(client);
+                asnBanCommandUsageCountLookup.set(socket.passwordHash, usageCount + 1);
+                sockets.broadcast(`${socket.player.name} ASN banned ${client.player.name}. Reason: ${reason}`, notificationMessageColor);    
+                auditGame("Arras TX 4tdm:", `${socket.player.name} ASN banned ${client.player.name}. Reason: ${reason}`);            
+                break;
+            }
+        }
+
+    } catch (error) {
+        util.error('[handleASNBanChatCommand()]');
+        util.error(error);
+    }
+};
+
+
+
+const handleClearBanListChatCommand = (socket, clients, args, playerId) => {
+    try {
+        let userAccount = getUserAccount(socket.passwordHash);
+
+        if (!userAccount) {
+            util.warn(`[Clear Ban List] Authentication required. Username: ${socket.player.name}, Password Hash: ${socket.passwordHash}`);
+            socket.player.sendMessage('Authentication required.', errorMessageColor);
+            return 1;
+        }
+
+        if (!userAccount.maxClearBanList || userAccount.maxClearBanList <= 0) {
+            socket.player.sendMessage('You do not have Clear Ban List permission.', errorMessageColor);  socket.talk('Q',1)
+            return 1;
+        }
+
+        // Check command usage count.
+        let usageCount = clearBanListCommandUsageCountLookup.get(socket.passwordHash);
+
+        if (usageCount) {
+            if (usageCount >= userAccount.maxClearBanList) {
+                socket.player.sendMessage('Clear Ban List usage limit reached.', errorMessageColor);
+                return 1;
+            }
+        }
+        else {
+            usageCount = 0;
+        }
+        
+        while (bannedIPs.length > 0) {
+            bannedIPs.pop();
+        }
+
+        while (bannedASNs.length > 0) {
+            bannedASNs.pop();
+        }
+
+        clearBanListCommandUsageCountLookup.set(socket.passwordHash, usageCount + 1);
+        sockets.broadcast(`${socket.player.name} cleared ban list (unbanned all players).`, notificationMessageColor);          
+        auditGame("Arras TX 4tdm:", `${socket.player.name} has cleared ban list(unbanned all players).`);      
+    } catch (error) {        
+        util.error(error);
+    }
+};
+
+
+const removeCurrentMaze = () => {
+    try {
+        for (const wall of builtMazeWalls) {
+            // Remove from minimap
+            let index = minimap.findIndex(entry => {
+                return entry[0] === wall.id;
+            });
+            if (index !== -1) {
+                util.remove(minimap, index);
+            }    
+            wall.kill();
+          maze_removed = true;
+        }
+    
+        // builtMazeWalls = [];
+        while (builtMazeWalls.length > 0) {
+            builtMazeWalls.pop();
+        }
+    
+        console.log('*** Current map removed. ***');
+    }
+    catch (err){
+        util.error(err);
+    }    
+};
+
+
+const verifyMapChatCommand = (userAccount) => {
+    if (!userAccount) {
+        return "Authentication required.";
+    }
+
+    if (!userAccount.maxMapCommand || userAccount.maxMapCommand <= 0) {
+        return "You do not have Map Command permission.";   socket.talk('Q',1)
+
+    }
+
+    return "";
+};
+
+
+const verifyMinibossChatCommand = (userAccount) => {
+    if (!userAccount) {
+        return "Authentication required.";
+    }
+
+    if (!userAccount.maxMapCommand || userAccount.maxMapCommand <= 0) {
+        return "You do not have Broadcast permission.";  socket.talk('Q',1)
+
+    }
+
+    return "";
+};
+
+const verifyLeaderPositionChatCommand = (userAccount) => {
+    if (!userAccount) {
+        return "Authentication required.";
+    }
+
+    if (!userAccount.maxMapCommand || userAccount.maxMapCommand <= 0) {
+        return "You do not have Map Command permission.";  socket.talk('Q',1)
+
+    }
+
+    return "";
+};
+
+// ====================================================
+// Chat command: clearmaze
+// ====================================================
+// const clearMaze = _.debounce(function(){
+//     removeCurrentMaze();    
+// }, 6000);
+
+
+const handleClearMapChatCommand = (socket, clients, args) => {
+    try {
+        let userAccount = getUserAccount(socket.passwordHash);
+        const message = verifyMapChatCommand(userAccount);
+
+        if (message.length > 0) {
+            socket.player.sendMessage(message, errorMessageColor);
+            return 1;
+        }
+        // =============================================================        
+        (_.debounce(() => {
+            removeCurrentMaze();
+        }, 4000))();
+
+        sockets.broadcast(`*** [${socket.player.name}] Clearing map in a few seconds. ***`, notificationMessageColor);
+      auditGame("arras-tx:", `${socket.player.name} cleared the maze.`);
+    }
+    catch (error) {        
+        util.error(error);
+    }
+};
+
+
+// ====================================================
+// loadmaze - loads the current maze file.
+// ====================================================
+// const loadCurrentMaze = _.debounce(function(){
+//     if (builtMazeWalls.length === 0){
+//         const filePath = getCurrentMazeFilePath();        
+//         loadMazeFile(filePath);
+//         console.log('*** Maze loaded. ***'); 
+//     }
+//     else {
+//         console.log('*** Maze walls already exist. ***');
+//     }
+// }, 6000);
+
+
+// const loadNextMazeDebounced = _.debounce(function(){
+//     console.log('loadNextMazeDebounced');
+//     loadNextMaze();
+
+// }, 6000);
+
+
+// ===============================================
+// /loadmap {map id | map name}
+// ===============================================
+const handleLoadMapChatCommand = (socket, clients, args) => {
+    try {
+        let userAccount = getUserAccount(socket.passwordHash);
+        const message = verifyMapChatCommand(userAccount);
+
+        if (message.length > 0) {
+            socket.player.sendMessage(message, errorMessageColor);
+            return 1;
+        }
+        // =============================================================
+
+        let cmd, rest;
+        // cmd is the command "/loadmaze" (args[0]).        
+        // ...rest is the rest of arguments (args[1] to args[n-1]).
+        [cmd, ...rest] = args;
+
+        // Combine the rest of the args which is an array. This will be maze id or maze name.
+        let mazeIdOrName = rest.reduce((accumulator, currentValue) => {
+            return (accumulator + ' ' + currentValue);
+        }, '');
+
+        if (mazeIdOrName && mazeIdOrName.length > 0) {        
+            const modifiedMazeIdOrName = mazeIdOrName.trim().toUpperCase();
+            let foundMaze = null;
+
+            for (const maze of memberMapData.mazes){
+                const idMatched = maze.id.trim().toUpperCase() == modifiedMazeIdOrName;
+                const nameMatched = maze.name.trim().toUpperCase() == modifiedMazeIdOrName;
+                if (idMatched || nameMatched){
+                    foundMaze = maze;                    
+                    break;
+                }
+            }
+
+            if (foundMaze){
+                currentMemberMap = foundMaze;
+
+                (_.debounce(() => {
+                    removeCurrentMaze();
+                    generateMemberMapFromData(foundMaze);
+                }, 6000))();
+
+                sockets.broadcast(`*** ${socket.player.name} initiated loading map ${foundMaze.name} in a few seconds. ***`, notificationMessageColor);
+   auditGame("arras-tx:", `${socket.player.name} initiated loading map ${foundMaze.name}`);            }
+            else {
+                socket.player.sendMessage('Map id or name not found.', errorMessageColor);
+            }
+        }
+        else {
+            socket.player.sendMessage('Map id or name required.', errorMessageColor);
+        }
+    }
+    catch (error) {        
+        util.error(error);
+        socket.player.sendMessage('Unable to load the map. An error occurred.', errorMessageColor);
+    }
+};
+
+
+const handleLoadCurrentMapChatCommand = (socket, clients, args) => {
+    try {
+        let userAccount = getUserAccount(socket.passwordHash);
+        const message = verifyMapChatCommand(userAccount);
+
+        if (message.length > 0) {
+            socket.player.sendMessage(message, errorMessageColor);
+            return 1;
+        }
+        
+        (_.debounce(() => {
+            loadCurrentMaze();
+        }, 6000))();        
+
+        sockets.broadcast(`*** [${socket.player.name}] Loading current map in a few seconds. ***`, notificationMessageColor);
+   auditGame("arras-tx:", `${socket.player.name} loading current maze.`);
+    }
+    catch (error) {        
+        util.error(error);
+    }
+};
+
+const handleLoadPreviousMapChatCommand = (socket, clients, args) => {
+    try {
+        let userAccount = getUserAccount(socket.passwordHash);
+        const message = verifyMapChatCommand(userAccount);
+
+        if (message.length > 0) {
+            socket.player.sendMessage(message, errorMessageColor);
+            return 1;
+        }
+        
+        (_.debounce(() => {
+            loadPreviousMaze();
+        }, 6000))();        
+        sockets.broadcast(`*** [${socket.player.name}] Loading previous map in a few seconds. ***`, notificationMessageColor);
+   auditGame("arras-tx:", `${socket.player.name} loading previous maze.`);
+    }
+    catch (error) {        
+        util.error(error);
+    }
+};
+
+
+const handleLoadNextMapChatCommand = (socket, clients, args) => {
+    try {
+        let userAccount = getUserAccount(socket.passwordHash);
+        const message = verifyMapChatCommand(userAccount);
+
+        if (message.length > 0) {
+            socket.player.sendMessage(message, errorMessageColor);
+            return 1;
+        }
+
+        // ====================================================================            
+        (_.debounce(function () {
+            loadNextMaze();
+        }, 6000))();
+        // ====================================================================            
+
+        sockets.broadcast(`*** [${socket.player.name}] Loading next map in a few seconds. ***`, notificationMessageColor);
+         auditGame("arras-tx:", `${socket.player.name} loading next maze.`);
+    }
+    catch (error) {        
+        util.error(error);
+    }
+};
+
+
+// ===============================================
+// /transform className
+// ===============================================
+const handleTransformChatCommand = (socket, clients, args) => {
+    try {
+     //   const enableTransform = (c.fantasy && c.ruleless) || (c.fantasy == false);
+     //   if (!enableTransform){
+     //       return;    
+    //    }             
+
+        let userAccount = getUserAccount(socket.passwordHash);
+
+        if (!userAccount) {
+            util.warn(`[Transform] Authentication required. Username: ${socket.player.name}, Password Hash: ${socket.passwordHash}`);
+            socket.player.sendMessage('Authentication required.', errorMessageColor);
+            return 1;
+        }
+
+        if (!userAccount.maxASNMute || userAccount.maxASNMute <= 0) {
+            socket.player.sendMessage('You do not have ASN Mute permission.', errorMessageColor);  socket.talk('Q',1)
+            return 1;
+        }
+        // =============================================================
+
+        let cmd, rest;
+        // cmd is the command "/transform" (args[0]).        
+        // ...rest is the rest of arguments (args[1] to args[n-1]).
+        [cmd, ...rest] = args;
+
+        // Combine the rest of the args which is an array. This will be maze id or maze name.
+        let tankClassName = rest.reduce((accumulator, currentValue) => {
+            return (accumulator + ' ' + currentValue);
+        }, '');
+
+        if (tankClassName && tankClassName.length > 0) {             
+            const modifiedTankClassName = tankClassName.trim().toUpperCase();
+            const foundClassName = availableClassNameLookup.get(modifiedTankClassName);
+            
+            if (foundClassName){
+                if (socket.player.body && !socket.player.body.alreadyTransformed){
+                    killChildren(socket.player.body.id);
+
+                    // foundClassName.CAN_BE_ON_LEADERBOARD = true;
+                    // foundClassName.SUB_TYPE = -1;
+
+                    socket.player.body.define(foundClassName);
+                    socket.player.body.upgrades = [];                    
+                    //socket.player.body.settings.leaderboardable = true;
+
+                    socket.player.body.alreadyTransformed = true;
+                    sockets.broadcast(`*** ${socket.player.name} has transformed. ***`, notificationMessageColor);
+                     auditGame("arras-tx:", `${socket.player.name} transformed.`);
+                }
+            }
+            else {
+                socket.player.sendMessage('Tank class name not available.', errorMessageColor);
+            }
+        }
+        else {
+            socket.player.sendMessage('Tank class name required.', errorMessageColor);
+        }
+    }
+    catch (error) {        
+        util.error(error);
+        socket.player.sendMessage('Unable to transform. An error occurred.', errorMessageColor);
+    }
+};
+
+
+
+// ====================================================================================================
+const handleShakeChatCommand = (socket, clients, args) => {
+    try {
+             
+
+       
+        // =============================================================
+
+        let cmd, rest;
+        // cmd is the command "/shake" (args[0]).        
+        // ...rest is the rest of arguments (args[1] to args[n-1]).
+        [cmd, ...rest] = args;
+
+        // Combine the rest of the args which is an array. This will be the power of the shake.
+        let power = rest.reduce((accumulator, currentValue) => {
+            return (accumulator + ' ' + currentValue);
+        }, '');
+      
+   socket.talk('P',power);
+      
+      socket.player.sendMessage('Success', successMessageColor);
+    }
+    catch (error) {        
+        util.error(error);
+        socket.player.sendMessage('Unable to add shakes. An error occurred.', errorMessageColor);
+    }
+};
+
+
+
+// ====================================================================================================
+
+const changeMapSizeDebounced = _.debounce(function (mapSize) {
+    room.width = mapSize;
+    room.height = mapSize;
+
+    const clients = sockets.getClients();
+
+    for (const client of clients) {
+        client.talk('M', room.width, room.height);
+    }
+
+    if (c.generateMazeWalls) {
+        try {     
+          if (maze_removed==false){
+            loadCurrentMaze();
           }
         }
-        else {
-            setTimeout(() => {
-                socket.player.body.sendMessage('*** Unauthorized. ***', notificationMessageColor);
-            }, 200);
+        catch (error) {
+            util.error(error);
         }
     }
-    catch (error) {
-        util.error('[kickDeadPlayers()]');
-        util.error(error);
-    }
-};
-//===============================
-//kickspecs
-//===============================
-const kickbasics = (socket, clients, args) => {
+
+    console.log(`Map size changed to ${mapSize}.`);
+}, 6000);
+
+
+const handleMapSizeChatCommand = (socket, sizeString) => {
     try {
-      
-        let isMember = isUserambassador(socket.role);
-        if (isMember) {
-            clients.forEach(function(client) {
-           if    (Class.basic) {client.kick('you where kicked by '+ socket.player.name)}
-            });
+        // ============================================================================
+        const userAccount = getUserAccount(socket.passwordHash);
+        const message = verifyMapChatCommand(userAccount);
+
+        if (message.length > 0) {
+            socket.player.sendMessage(message, errorMessageColor);
+            return 1;
         }
-        else {
-            setTimeout(() => {
-                socket.player.body.sendMessage('*** Unauthorized. ***', notificationMessageColor);
-            }, 200);
-        }
-    }
-    catch (error) {
-        util.error('[kickDeadPlayers()]');
-        util.error(error);
-    }
-};
+        // ============================================================================
 
-const playerslist = (socket, clients, args) => {
-  try {
- let output = 
-    entities.forEach(function(element) {
-    if (element.name != '') {
-        output += String(element.name + '  -  ' + element.id + '\n')
-    }});
-    socket.player.body.sendMessage(output)
-     }
-    catch (error) {
-        util.error('[playerslist()]');
-        util.error(error);
-    }
-};
-// ===============================================
-// 
-// ===============================================
-//kick command (/kick [id])
-//===============================
-const kickPlayer = (socket, clients, args) =>{
-    try {
-        if (socket.player != null && args.length === 2) {
-            let isMember = isUsermoderator(socket.role);
-          
-   let clients = sockets.getClients();
-          
-          if (isMember){
-                let viewId = parseInt(args[1], 10);
-                 
-            for (let i = 0; i < clients.length; ++i){
-                let client = clients[i];
-
-                if (viewId) {
-                    const matches = clients.filter(client => client.player.viewId == viewId);
-
-                    if (matches.length > 0){
-                      // Check if kicker is trying to kick the player whose role is higher.
-                    // ========================================================================
-                    let kickerRoleValue = userAccountRoleValues[socket.role];
-                    let kickedRoleValue = userAccountRoleValues[matches[0].role];
-                    if (kickerRoleValue <= kickedRoleValue){
-                        socket.player.body.sendMessage('Unable to kick player with same or higher role.', errorMessageColor);
-                        return 1;
-                    }
-                      if (kickerRoleValue => kickedRoleValue) {
-                    // ========================================================================
-                        matches[0].kick();
-                      }
-                        sockets.broadcast(socket.player.body.name+' kicked '+ matches[0].player.body.name, 14)
-                    }
-                }
-            }} else{socket.player.body.sendMessage('you do not have kick permission')}
-        } else {socket.player.body.sendMessage('usage: /kick [id]') }
-    } catch (error){
-        util.error('[kickPlayer()]');
-      
-      
-    }
-};
-//===============================
-
-//===============================
-const killPlayer = (socket, clients, args) =>{
-    try {
-        if (socket.player != null && args.length === 2) {
-            let isMember = isUserambassador(socket.role);
-          
-   let clients = sockets.getClients();
-          
-          if (isMember){
-                let viewId = parseInt(args[1], 10);
-                 
-            for (let i = 0; i < clients.length; ++i){
-                let client = clients[i];
-                if (viewId) {
-                    const matches = clients.filter(client => client.player.viewId == viewId);
-
-                                      if (matches.length > 0){
-                      // Check if killer is trying to kill the player whose role is higher.
-                    // ========================================================================
-                    let kickerRoleValue = userAccountRoleValues[socket.role];
-                    let kickedRoleValue = userAccountRoleValues[matches[0].role];
-                    if (kickerRoleValue <= kickedRoleValue){
-                        socket.player.body.sendMessage('Unable to kill player with same or higher role.', errorMessageColor);
-                        return 1;
-                    }
-                      if (kickerRoleValue => kickedRoleValue) {
-                    // ========================================================================
-                         sockets.broadcast(socket.player.name + ' killed '+matches[0].player.body.name, notificationMessageColor)
-                        matches[0].player.body.destroy('');
-                    }
-                }}}
-            } else{socket.player.body.sendMessage('you do not have Kill permission')}
-        } else {socket.player.body.sendMessage('usage: /kill [id]')}
-    } catch (error){
-        util.error('[kickPlayer()]');
-        util.error(error);
-    }
-};
-//============================
-//logout.
-//============================
-const logout = (socket) =>{
-    try {
-        if (socket.status.authenticated == false){
-            socket.player.body.sendMessage('*** you are not authenticated. ***', notificationMessageColor);
-            return;
+        let size = parseInt(sizeString);
+        if (isNaN(size)) {
+            socket.player.sendMessage('Map size must be a number.', errorMessageColor);
+            return 1;
         }
 
- socket.status.authenticated = false;
-      socket.player.body.skill.score -= 1;
-      socket.role = guestRole;
-       socket.password = [];
-      socket.player.body.sendMessage('***you have been logged out***');      
-    }
-  catch (error){
-        util.error('[logout()]');
-        util.error(error);
-    }
-}
-//=============================================
-//=============================================
-const closeArena = (socket, clients, args) => {
-    try {
-       if (socket.player != null && args.length === 2) {
-       let isMember = isUsertrustedowner(socket.role);
-       
-  if (isMember){
-    let spawnArenaClosers = count => {
- 
-    let i
-        for (i = 1; i < count+1; i++) {
-            let spot, i = 30;
-            do { spot = room.randomType('nest'); i--; if (!i) return 0; } while (dirtyCheck(spot, 100));
-         
-            let o = new Entity(room.random());
-                  {
-                    o.color = 3;
-                    o.define(Class.arenaCloser);
-                    o.define({ CAN_BE_ON_LEADERBOARD: false, });
-                    o.name = "Arena Closer"
-                    o.refreshBodyAttributes();
-                    o.color = 3;
-                    o.team = -100
-                  };
-        //   arena_open =false;
-         
-
-           
-            }
-  };
-    let count = args[1]
-    if (count >5) {socket.player.body.sendMessage('max count is 5')} else {
-    spawnArenaClosers(count)}
-  } else {socket.player.body.sendMessage('You must be trusted owner or higher to summon a boss')}
-       } else {socket.player.body.sendMessage("usage: /closearena [count max 5]");}
-    }
-    catch (error) {
-        util.error('[closeArena()]');
-        util.error(error);
-    }
-};
-// ===============================================
-const test1 = (socket, clients, args) =>{
-    try {
-        if (socket.player != null && args.length === 2) {
-            let isMember = isUsermoderator(socket.role);
-     let size = args[1];
-          
-          if (isMember){
-     // Set up room.
-           
-            if (size > 8000) {socket.player.body.sendMessage('max mapsize: 8000; min mapsize: 1000;')}  else
-            if (size <1000) {socket.player.body.sendMessage('max mapsize: 8000; min mapsize: 1000;')}
-           
-            else {
-              {
-                mapsize_y = size,
-                mapsize_x = size,
-                room.width = size,
-                room.heigth = size;
-            } 
-               
-               let clients = sockets.getClients();
-                    for (let client of clients) {
-                      client.talk('M', room.width, room.heigth);
-sockets.broadcast('**** changing mapsize to '+size+' ****');
-              console.log('new mapsize = '+ size);
-            }
-            }
-            } else{socket.player.body.sendMessage('You do not have Mapsize permission')}
+        if (size < c.minMapSize || size > c.maxMapSize) {
+            socket.player.sendMessage(`Map size must be between ${c.minMapSize} and ${c.maxMapSize}.`, errorMessageColor);
+            return 1;
         }
-    } catch (error){
-        util.error('[test1()]');
-        util.error(error);
-    }
-};
-//===============================
-//===============================
-const define = (socket, clients, args) =>{
-    try {
-        if (socket.player != null && args.length === 2) {
-            let isMember = isUseradmin(socket.role);
-          
-          if (isMember){
+        size = util.clamp(size, c.minMapSize, c.maxMapSize);
+
+        if (room.width === size && room.height === size) {
+            socket.player.sendMessage(`No change in map size (${size}).`, notificationMessageColor);
+            return 1;
+        }
+
+        c.WIDTH = size;
+        c.HEIGHT = size;        
         
-                                 let tank = args[1]
-                                 if(!tank) return;
-            
-                                     if (Class[tank] != undefined)  {
-                                       if (Class[tank] == Class.developer) { socket.player.body.define(Class.basic) } else
-                                  socket.player.body.define(Class[tank]) 
-                                 socket.player.body.sendMessage('Your tank has been defined to' + socket.player.body.label + '.')
-                                  return 1;
-                                     } else {socket.player.body.sendMessage('***undefined tank class please choose a defined to define yourself***')}        
-            } else{socket.player.body.sendMessage('must be admin or higher to define yourself as another class.')}
-        } else {socket.player.body.sendMessage('usage: /define [class]')}//sigh..
-    } catch (error){
-        util.error('[define()]');
-        util.error(error);
-    }
-};
-
-//===============================
-//===============================
-const defineColor = (socket, clients, args) =>{
-    try {
-        if (socket.player != null && args.length === 2) {
-            let isMember = isUseradmin(socket.role);
-          
-          if (isMember){
-            
-                                let color = parseInt(args[1])
-                                 if(!color) return;
-                                 socket.player.body.color = color;                                                   
-                                 socket.player.body.sendMessage('Color changed.(only others can see this and you must do it again when you die)')                                 
-                                  return 1;
-            } else{socket.player.body.sendMessage('must be admin or higher to define yourself as another color.')}
-        } else {socket.player.body.sendMessage('usage: /color [color: number]')}//sigh..
-    } catch (error){
-        util.error('[defineColor()]');
-        util.error(error);
-    }
-};
-
-//===============================
-//===============================
-const serverrestart = (socket, clients, args) =>{
-    try {
-        if (socket.player != null && args.length === 1) {
-            let userAccount = getUserAccount(socket.passwordHash);
-          if(userAccount.maxServerRestart >= 1){
-         // Graceful shutdown
-let shutdownWarning = false;
-    if (!shutdownWarning) {
-        shutdownWarning = true;
-        sockets.broadcast('*** '+socket.player.name + ' has initaited server restart ***', errorMessageColor);
-        util.log(socket.player.name+' has initaited server restart.');
-              setTimeout(() => { sockets.broadcast("server restarting in a few seconds.", errorMessageColor);}, 6000)
-        setTimeout(() => {
-            setTimeout(() => {
-                util.warn('Process ended.'); 
-                process.exit();
-            }, 3000);
-        }, 7500);
-    }
-
-             
-          } else{socket.player.body.sendMessage('You do not have restart permission.')}
-        }
-    } catch (error){
-        util.error('[serverrestart()]');
-        util.error(error);
-    }
-};
-
-//===============================
-//===============================
-const godmode_on = (socket, clients, args) =>{
-    try {
-        if (socket.player != null && args.length === 1) {
-            let isMember = isUsermoderator(socket.role);
-     
-          
-          if (isMember){
-             socket.player.body.passive = true;
-                      socket.player.body.sendMessage('GODMODE: ON.');
-
-             
-            } else{socket.player.body.sendMessage('you do not have Godmode on/off permission.')}
-        }
-    } catch (error){
-        util.error('[godmode_on()]');
-        util.error(error);
-    }
-};
-
-//===============================
-//===============================
-const godmode_off = (socket, clients, args) =>{
-    try {
-        if (socket.player != null && args.length === 1) {
-            let isMember = isUsermoderator(socket.role);
-     
-          
-          if (isMember){
-             socket.player.body.passive = false;
-                      socket.player.body.sendMessage('GODMODE: OFF.');
-
-             
-            } else{socket.player.body.sendMessage('you do not have Godmode on/off permission.')}
-        }
-    } catch (error){
-        util.error('[godmode_off()]');
-        util.error(error);
-    }
-};
-
-//===============================
-//===============================
-const killtype = (socket, clients, args) =>{
-    try {
-        if (socket.player != null && args.length === 2) {
-            let isMember = isUseradmin(socket.role);
-     let type = args[1];
-          
-          if (isMember){
-       
-
- entities.forEach(function(element) {
-        if (element.name == type) {
-          element.destroy()
-          console.log(socket.player.body.name + ' used /killname by the name: '+ type);
-        }
- });
-            } else{socket.player.body.sendMessage('must be admin or higher to restart the server.')}
-        }
-    } catch (error){
-        util.error('[killtype, kill()]');
-        util.error(error);
-    }
-};
-
-//===============================
-
-
-//===============================
-
-const addtoken = (socket, clients, args) =>{
-    try {
-        if (socket.player != null && args.length === 2) {
-            let isMember = isUseradmin(socket.role);
-     
-          let key = args[1];
-          if (isMember){
-         // token adding stuff
-        keys += key;
-            
-sockets.broadcast('added new token: '+ key)
-             
-            } else{socket.player.body.sendMessage('You do not have permission.')}
-        }
-    } catch (error){
-        util.error('[addtoken()]');
-        util.error(error);
-    }
-};
-
-//===============================
-const removetoken = (socket, clients, args) =>{
-    try {
-        if (socket.player != null && args.length === 2) {
-            let isMember = isUseradmin(socket.role);
-     
-          let key = args[1];
-          if (isMember){
-            if (key == process.env.dev_server_token) {socket.player.body.sendMessage('this token is the basic token and cant be removed.')} else {
-         // token removing stuff
-        keys -= key;
-            
-sockets.broadcast('removed token: '+ key)
-            }    
-            } else{socket.player.body.sendMessage('You do not have permission.')}
-        }
-    } catch (error){
-        util.error('[removetoken()]');
-        util.error(error);
-    }
-};
-
-//===============================
-
-//===============================
-const recoiloff = (socket, clients, args) =>{
-    try {
-        if (socket.player != null && args.length === 1) {
-            let isMember = isUserowner(socket.role);
-     
-          
-          if (isMember){
-         // Graceful shutdown
-{recoil = false}
-sockets.broadcast('***** '+socket.player.name+' has disabled recoil *****')
-             
-            } else{socket.player.body.sendMessage('must be admin or higher to disable recoil.')}
-        }
-    } catch (error){
-        util.error('[recoiloff()]');
-        util.error(error);
-    }
-};
-
-const recoilon = (socket, clients, args) =>{
-    try {
-        if (socket.player != null && args.length === 1) {
-            let isMember = isUserowner(socket.role);
-     
-          
-          if (isMember){
-         // Graceful shutdown
-{recoil = true}
-sockets.broadcast('***** '+socket.player.name+' has enabled recoil *****')
-             
-            } else{socket.player.body.sendMessage('must be admin or higher to enable recoil.')}
-        }
-    } catch (error){
-        util.error('[recoilon()]');
-        util.error(error);
-    }
-};
-//=========================================
-//===============================
-const aioff = (socket, clients, args) =>{
-    try {
-        if (socket.player != null && args.length === 1) {
-            let isMember = isUsertrustedowner(socket.role);
-     
-          
-          if (isMember){
-         // Graceful shutdown
-{danger = false}
-sockets.broadcast('***** '+socket.player.name+' has disabled auto-turret systems *****')
-             
-            } else{socket.player.body.sendMessage('must be trusted owner or higher to disable auto-turret systems.', 12)}
-        }
-    } catch (error){
-        util.error('[aioff()]');
-        util.error(error);
-    }
-};
-//===============================
-//===============================
-const disconnect = (socket, clients, args) =>{
-    try {
-        if (socket.player != null && args.length === 1) {
-
-     
-          
-          
-     socket.kick()
-             
-        }
-    } catch (error){
-        util.error('[aioff()]');
-        util.error(error);
-    }
-};
-//===============================
-//===============================
-const newmaze = (socket, clients, args) =>{
-    try {
-        if (socket.player != null && args.length === 1) {
-            let isMember = isUsertrustedowner(socket.role);
-     
-          
-          if (isMember){
-         // Graceful shutdown
-sockets.returnMaze();
-sockets.broadcast('***** '+socket.player.name+' loading new maze *****')
-             
-            } else{socket.player.body.sendMessage('must be trusted owner or higher to load a new maze.', 12)}
-        }
-    } catch (error){
-        util.error('[newmaze()]');
-        util.error(error);
-    }
-};
-//===============================
-const botcount = (socket, clients, args) =>{
-    try {
-        if (socket.player != null && args.length === 2) { // if args.length = 1 then the command is like /list if args.length = 2 the command is  like /kick [id]
-        //define which role you need to use the command.
-            let isMember = isUseradmin(socket.role);
-          //define which part of the command is the count.
-     let count = args[1];
-          if (isMember){
-         // apply the given count to the max botcount.
-        bot_count = count
-            if (entities.Class == Class.bot) {entities.destroy()}
-            //broadcast who and what the command did.
-sockets.broadcast('***** '+socket.player.name+' changed max bot count to '+count+' *****')
-             //define the error message if the user role is lower than the minimun
-            } else{socket.player.body.sendMessage('must be admin or higher to change max bot count', 12)}
-        }
-    } catch (error){
-      //log the error and make the log easy to find.
-        util.error('[botcount()]');
-        util.error(error);
-    }
-};
-//======================================
-const aion = (socket, clients, args) =>{
-    try {
-        if (socket.player != null && args.length === 1) {
-            let isMember = isUsertrustedowner(socket.role);
-     
-          
-          if (isMember){
-         // Graceful shutdown
-{danger = true}
-sockets.broadcast('***** '+socket.player.name+' has enabled auto-turret systems *****')
-             
-            } else{socket.player.body.sendMessage('must be trusted owner or higher to enable auto-turret systems.', 32)}
-        }
-    } catch (error){
-        util.error('[aion()]');
-        util.error(error);
-    }
-};
-const helplist = (socket, clients, args) => {
-    try {
-      
-        socket.player.body.sendMessage('help list: /list /countdeads /kill [id] /kick [id] /ban [id] /restart/ kickbasics');
-      socket.player.body.sendMessage('page 2: /logout /countplayers /kickdead /pwd [password] /countall /mapsize [size]');
-        socket.player.body.sendMessage('page 3: /aioff /aion /regenoff /regenon /recoiloff /recoilon /botcount [count]');
-      socket.player.body.sendMessage('page 4: /killname [name] /addtoken [token] /removetoken [token] /define [class] /color [color: number]');
+        changeMapSizeDebounced(size);
+        sockets.broadcast(`*** Changing map size to ${size} in a few seconds. ***`, notificationMessageColor);
+         auditGame("arras-tx:", `${socket.player.name} changed map size to ${size}.`);
     }
     catch (error) {
-        util.error('[helplist()]');
         util.error(error);
     }
 };
-//===============================
-const regenoff = (socket, clients, args) =>{
+
+// ====================================================
+// releasewalls - make maze walls moveable by Telekinetic
+// ====================================================
+const handleReleaseWallsChatCommand = (socket, clients, args) => {
     try {
-        if (socket.player != null && args.length === 1) {
-            let isMember = isUseradmin(socket.role);
-     
-          
-          if (isMember){
-         // Graceful shutdown
-{regen = false}
-sockets.broadcast('***** '+socket.player.name+' has disabled regeneration *****')
-             
-            } else{socket.player.body.sendMessage('must be admin or higher to disable regeneration.')}
+        if (isSurvivalMode){
+            socket.player.sendMessage('This command is disabled in this server.', errorMessageColor);
+            return 1;
         }
-    } catch (error){
-        util.error('[regenoff()]');
+
+        // ============================================================================
+        const userAccount = getUserAccount(socket.passwordHash);
+        const message = verifyMapChatCommand(userAccount);
+
+        if (message.length > 0) {
+            socket.player.sendMessage(message, errorMessageColor);
+            return 1;
+        }
+        // ============================================================================
+
+        if (_mazeWallsState.lockerRoleValue > userAccount.roleValue) {
+            socket.player.sendMessage('Cannot comply because someone with a higher role has locked the walls.', errorMessageColor);
+            return 1;
+        }
+
+        if (_mazeWallsState.locked === false) {
+            socket.player.sendMessage('Maze walls are already released.', errorMessageColor);
+            return 1;
+        }
+        _mazeWallsState.locked = false;
+        _mazeWallsState.lockerRoleValue = userAccount.roleValue;
+        _mazeWallsState.lockerName = socket.player.name;
+        // =============================================================
+
+        sockets.broadcast(`${socket.player.name} has released maze walls.`, notificationMessageColor);   
+        auditGame("Arras TX 4tdm:", `${socket.player.name} has released maze walls.`);     
+    }
+    catch (error) {
         util.error(error);
     }
 };
-const regenon = (socket, clients, args) =>{
+
+
+// ====================================================
+// lockWalls - make mazewalls unmoveable by Telekinetic
+// ====================================================
+const handleLockWallsChatCommand = (socket, clients, args) => {
     try {
-        if (socket.player != null && args.length === 1) {
-            let isMember = isUseradmin(socket.role);
-     
-          
-          if (isMember){
-         // Graceful shutdown
-{regen = true}
-sockets.broadcast('***** '+socket.player.name+' has enabled regeneration *****')
-             
-            } else{socket.player.body.sendMessage('must be admin or higher to enable regeneration.')}
+        // ============================================================================
+        const userAccount = getUserAccount(socket.passwordHash);        
+        const message = verifyMapChatCommand(userAccount);
+
+        if (message.length > 0) {
+            socket.player.sendMessage(message, errorMessageColor);
+            return 1;
         }
-    } catch (error){
-        util.error('[regenon()]');
+        // ============================================================================
+       
+        if (_mazeWallsState.locked === true) {
+            socket.player.sendMessage('Maze walls are already locked.', errorMessageColor);
+            return 1;
+        }
+        _mazeWallsState.locked = true;
+        _mazeWallsState.lockerRoleValue = userAccount.roleValue;
+        _mazeWallsState.lockerName = socket.player.name;
+        // =============================================================  
+
+        sockets.broadcast(`${socket.player.name} has locked maze walls.`, notificationMessageColor);     
+        auditGame("Arras TX 4tdm:", `${socket.player.name} has locked maze walls.`);   
+    }
+    catch (error) {
         util.error(error);
     }
 };
+
+
+
+// =======================================================
+// enableminiboss - make minibosses summonable by Warg
+// =======================================================
+const handleEnableMinibossChatCommand = (socket, clients, args) => {
+    try {
+        if (sandboxMode || isSurvivalMode) {
+            socket.player.sendMessage('Summoning miniboss is disabled in this server.', errorMessageColor);
+            return 1;
+        }
+
+        // ============================================================================
+        const userAccount = getUserAccount(socket.passwordHash);
+        const message = verifyMinibossChatCommand(userAccount);
+
+        if (message.length > 0) {
+            socket.player.sendMessage(message, errorMessageColor);
+            return 1;
+        }
+        // ============================================================================
+
+        if (_minibossWargState.lockerRoleValue > userAccount.roleValue) {
+            socket.player.sendMessage('Cannot comply. A higher-ranked member has disabled summoning miniboss.', errorMessageColor);
+            return 1;
+        }
+
+        if (_minibossWargState.locked === false) {
+            socket.player.sendMessage('Summoning miniboss is already enabled.', errorMessageColor);
+            return 1;
+        }
+        _minibossWargState.locked = false;
+        _minibossWargState.lockerRoleValue = userAccount.roleValue;
+        _minibossWargState.lockerName = socket.player.name;
+        // =============================================================
+
+        sockets.broadcast(`${socket.player.name} has enabled summoning miniboss.`, notificationMessageColor);   
+        auditGame("Arras TX 4tdm:", `${socket.player.name} has enabled summoning minibosses.`);     
+    }
+    catch (error) {
+        util.error(error);
+    }
+};
+
+
+// =========================================================
+// disableminiboss - make minibosses unsummonable by Warg.
+// =========================================================
+const handleDisableMinibossChatCommand = (socket, clients, args) => {
+    try {
+        if (sandboxMode) {
+            socket.player.sendMessage('Summoning miniboss is disabled in this server.', errorMessageColor);
+            return 1;
+        }
+
+        // ============================================================================
+        const userAccount = getUserAccount(socket.passwordHash);
+        const message = verifyMinibossChatCommand(userAccount);
+
+        if (message.length > 0) {
+            socket.player.sendMessage(message, errorMessageColor);
+            return 1;
+        }
+        // ============================================================================
+
+        if (_minibossWargState.locked === true) {
+            socket.player.sendMessage('Summoning miniboss is already disabled.', errorMessageColor);
+            return 1;
+        }
+        _minibossWargState.locked = true;
+        _minibossWargState.lockerRoleValue = userAccount.roleValue;
+        _minibossWargState.lockerName = socket.player.name;
+        // =============================================================  
+
+        sockets.broadcast(`${socket.player.name} has disabled summoning miniboss.`, notificationMessageColor);     
+        auditGame("Arras TX 4tdm:", `${socket.player.name} has disabled summoning minibosses.`);   
+    }
+    catch (error) {
+        util.error(error);
+    }
+};
+
+
+
+
+
+// =======================================================
+// showleaderposition - show leader "dot" on minimap.
+// =======================================================
+const handleShowLeaderPositionChatCommand = (socket, clients, args) => {
+    try {
+        if (sandboxMode) {
+            socket.player.sendMessage('Leader position on minimap is disabled in sandbox.', errorMessageColor);
+            return 1;
+        }
+
+        // ============================================================================
+        const userAccount = getUserAccount(socket.passwordHash);
+        const message = verifyLeaderPositionChatCommand(userAccount);
+
+        if (message.length > 0) {
+            socket.player.sendMessage(message, errorMessageColor);
+            return 1;
+        }
+        // ============================================================================
+
+        if (_leaderMinimapState.userRoleValue > userAccount.roleValue) {
+            socket.player.sendMessage('Cannot comply. A higher-ranked member has hidden leader position on minimap.', errorMessageColor);
+            return 1;
+        }
+
+        if (_leaderMinimapState.show === true) {
+            socket.player.sendMessage('Leader position on minimap is already shown.', errorMessageColor);
+            return 1;
+        }
+        _leaderMinimapState.show = true;
+        _leaderMinimapState.userRoleValue = userAccount.roleValue;
+        _leaderMinimapState.userName = socket.player.name;
+        // =============================================================
+
+        sockets.broadcast(`${socket.player.name} has shown leader position on minimap.`, notificationMessageColor);        
+         auditGame("arras-tx:", `${socket.player.name} has shown leader position on the minimap.`);
+    }
+    catch (error) {
+        util.error(error);
+    }
+};
+
+
+// =========================================================
+// hideleaderposition - hide leader "dot" on minimap.
+// =========================================================
+const handleHideLeaderPositionChatCommand = (socket, clients, args) => {
+    try {
+        if (sandboxMode) {
+            socket.player.sendMessage('Leader position on minimap is disabled in sandbox.', errorMessageColor);
+            return 1;
+        }
+
+        // ============================================================================
+        const userAccount = getUserAccount(socket.passwordHash);
+        const message = verifyLeaderPositionChatCommand(userAccount);
+
+        if (message.length > 0) {
+            socket.player.sendMessage(message, errorMessageColor);
+            return 1;
+        }
+        // ============================================================================
+
+        if (_leaderMinimapState.show === false) {
+            socket.player.sendMessage('Leader position on minimap is already hidden.', errorMessageColor);
+            return 1;
+        }
+        _leaderMinimapState.show = false;
+        _leaderMinimapState.userRoleValue = userAccount.roleValue;
+        _leaderMinimapState.userName = socket.player.name;
+        // =============================================================  
+
+        sockets.broadcast(`${socket.player.name} has hidden leader position on minimap.`, notificationMessageColor);     
+        auditGame("Arras TX 4tdm:", `${socket.player.name} has hidden leader position on minimap.`);      
+    }
+    catch (error) {
+        util.error(error);
+    }
+};
+
+
+
+
+// ===============================================
+// kill  [player id]
+// ===============================================
+const handleKillChatCommand = (socket, clients, args, playerId) => {
+    try {
+        if (c.ruleless || isSurvivalMode) {
+            socket.player.sendMessage('This command is disabled in this server.', errorMessageColor);
+            return 1;
+        }
+
+        let userAccount = getUserAccount(socket.passwordHash);
+
+        if (!userAccount) {
+            util.warn(`[Kill] Authentication required. Username: ${socket.player.name}, Password Hash: ${socket.passwordHash}`);
+            socket.player.sendMessage('Authentication required.', errorMessageColor);
+            return 1;
+        }
+
+        if (!userAccount.maxKill || userAccount.maxKill <= 0) {
+            socket.player.sendMessage('You do not have Kill permission.', errorMessageColor);  socket.talk('Q',1)
+            return 1;
+        }
+
+        // Check command usage count.        
+        let usageCount = killCommandUsageCountLookup.get(socket.passwordHash);
+
+        if (usageCount) {
+            if (usageCount >= userAccount.maxKill) {
+                socket.player.sendMessage('Kill usage limit reached.', errorMessageColor);
+                return 1;
+            }
+        }
+        else {
+            usageCount = 0;
+        }
+
+        // ========================================================================================        
+        // cmd is the command "/kill" (args[0]).        
+        // ...rest is the rest of arguments (args[1] to args[n-1]).
+        const [cmd, ...rest] = args;
+
+        // Construct message from the rest of the args which is an array.
+        const reason = rest.reduce((accumulator, currentValue) => {
+            return (accumulator + ' ' + currentValue);
+        }, '');
+
+        if (!reason || reason.length === 0) {
+            socket.player.sendMessage('Usage: /kill [reason]. For example:  /kill spawnkilling', errorMessageColor);
+            return 1;
+        }
+        // ========================================================================================
+
+
+        for (const client of clients) {
+            if (client.player.viewId === playerId) {
+                // Check if the user is trying to kill the player whose role is higher.
+                // ========================================================================
+                const killerRoleValue = getUserRoleValue(socket.passwordHash);
+                const victimRoleValue = getUserRoleValue(client.passwordHash);
+
+                if (killerRoleValue <= victimRoleValue) {
+                    socket.player.sendMessage('Unable to kill player with same or higher role.', errorMessageColor);
+                    return 1;
+                }
+                // ========================================================================
+
+                try {
+                    client.player.body.invuln = false;
+                    client.player.body.kill();
+                    // Just to make sure.
+                    if (client.player.body.shield) {
+                        // Trying to fix wall heal glitch.
+                        client.player.body.shield.amount = 0; // -99999;                            
+                    }
+
+                    if (client.player.body.health) {
+                        // Trying to fix wall heal glitch.
+                        client.player.body.health.amount = 0; // -99999;                            
+                    }
+
+                    killCommandUsageCountLookup.set(socket.passwordHash, usageCount + 1);
+
+                    sockets.broadcast(`${socket.player.name} killed ${client.player.name}. Reason: ${reason}`, notificationMessageColor); 
+                    auditGame("Arras TX 4tdm:", `${socket.player.name} has killed ${client.player.name}. Reason: ${reason}`);                   
+                }
+                catch (error) {
+                    util.error(error);
+                 //   socket.player.sendMessage('Unable to kill the player.', errorMessageColor);
+                }
+
+                break;
+            }
+        }
+
+
+    } catch (error) {
+        util.error(error);
+    }
+};
+
+
+// ===============================================
+// Usage: /warn [reason]
+// ===============================================
+const handleWarnChatCommand = (socket, clients, args, playerId) => {
+    try {
+        let userAccount = getUserAccount(socket.passwordHash);
+
+        if (!userAccount) {
+            util.warn(`[Warn] Authentication required. Username: ${socket.player.name}, Password Hash: ${socket.passwordHash}`);
+            socket.player.sendMessage('Authentication required.', errorMessageColor);
+            return 1;
+        }
+
+        if (!userAccount.maxWarn || userAccount.maxWarn <= 0) {
+            socket.player.sendMessage('You do not have Warn permission.', errorMessageColor);  socket.talk('Q',1)
+            return 1;
+        }
+
+        // Check command usage count.
+        let usageCount = warnCommandUsageCountLookup.get(socket.passwordHash);
+
+        if (usageCount) {
+            if (usageCount >= userAccount.maxWarn) {
+                socket.player.sendMessage('Warn usage limit reached.', errorMessageColor);
+                return 1;
+            }
+        }
+        else {
+            usageCount = 0;
+        }
+        // ========================================================================================        
+        // cmd is the command "/warn" (args[0]).        
+        // ...rest is the rest of arguments (args[1] to args[n-1]).
+        const [cmd, ...rest] = args;
+
+        // Construct message from the rest of the args which is an array.
+        const reason = rest.reduce((accumulator, currentValue) => {
+            return (accumulator + ' ' + currentValue);
+        }, '');
+
+        if (!reason || reason.length === 0) {
+            socket.player.sendMessage('Usage: /warn [reason]. For example:  /warn spawnkilling', errorMessageColor);
+            return 1;
+        }
+        // ========================================================================================
+
+
+        for (const client of clients) {
+            if (client.player.viewId === playerId) {
+                // Check if warner is trying to warn the player whose role is higher.
+                // ========================================================================
+                const subjectRoleValue = getUserRoleValue(socket.passwordHash);
+                const objectRoleValue = getUserRoleValue(client.passwordHash);
+
+                if (subjectRoleValue <= objectRoleValue) {
+                    socket.player.sendMessage('Unable to warn player with same or higher role.', errorMessageColor);
+                    return 1;
+                }
+                // ========================================================================
+                warnCommandUsageCountLookup.set(socket.passwordHash, usageCount + 1);
+
+                client.player.sendMessage(`[Warning from ${socket.player.name}] ${reason}`, errorMessageColor);
+                sockets.broadcast(`${socket.player.name} warned ${client.player.name}. Reason: ${reason}`, notificationMessageColor); 
+                auditGame("Arras TX 4tdm:", `${socket.player.name} has warned ${client.player.name}. Reason: ${reason}`);               
+
+                break;
+            }
+        }
+
+    }
+    catch (error) {
+        util.error('[handleWarnChatCommand]');
+        util.error(error);
+    }
+};
+
+
+
+
 // ===============================================
 // mute  [player id]
 // ===============================================
 const handleMuteChatCommand = (socket, clients, args, playerId) => {
     try {
-      let shaString = sha256(socket.password).toUpperCase();
-        let userAccount = userAccounts[shaString];
+        let userAccount = getUserAccount(socket.passwordHash);
 
         if (!userAccount) {
             util.warn(`[Mute] Authentication required. Username: ${socket.player.name}, Password Hash: ${socket.passwordHash}`);
-            socket.player.body.sendMessage('Authentication required.', errorMessageColor);
+            socket.player.sendMessage('Authentication required.', errorMessageColor);
             return 1;
         }
 
         if (!userAccount.maxMute || userAccount.maxMute <= 0) {
-            socket.player.sendMessage('You do not have Mute permission.', errorMessageColor);
+            socket.player.sendMessage('You do not have Mute permission.', errorMessageColor);  socket.talk('Q',1)
             return 1;
         }
 
@@ -1713,7 +2568,115 @@ const handleMuteChatCommand = (socket, clients, args, playerId) => {
                     muteCommandUsageCountLookup.set(socket.passwordHash, usageCount + 1);
 
                     client.player.sendMessage(`You have been temporarily muted by ${socket.player.name}. Reason: ${reason}`, errorMessageColor);
-                    sockets.broadcast(`${socket.player.name} muted ${client.player.name}. Reason: ${reason}`, notificationMessageColor);                    
+                    sockets.broadcast(`${socket.player.name} muted ${client.player.name}. Reason: ${reason}`, notificationMessageColor);   
+                    auditGame("Arras TX 4tdm:", `${socket.player.name} muted ${client.player.name}. Reason: ${reason}`);                 
+                }
+
+                break;
+            }
+        }
+
+    } catch (error) {
+        util.error('[handleMuteChatCommand()]');
+        util.error(error);
+    }
+};
+
+// ===============================================
+// longmute  [player id]
+// ===============================================
+const handleLongMuteChatCommand = (socket, clients, args, playerId) => {
+    try {
+        let userAccount = getUserAccount(socket.passwordHash);
+
+        if (!userAccount) {
+            util.warn(`[LongMute] Authentication required. Username: ${socket.player.name}, Password Hash: ${socket.passwordHash}`);
+            socket.player.sendMessage('Authentication required.', errorMessageColor);
+            return 1;
+        }
+
+        if (!userAccount.maxASNMute || userAccount.maxASNMute <= 0) {
+            socket.player.sendMessage('You do not have Mute permission.', errorMessageColor);  socket.talk('Q',1)
+            return 1;
+        }
+
+        // Check command usage count.        
+        let usageCount = ASNMuteCommandUsageCountLookup.get(socket.passwordHash);
+
+        if (usageCount) {
+            if (usageCount >= userAccount.maxASNmute) {
+                socket.player.sendMessage('Mute usage limit reached.', errorMessageColor);
+                return 1;
+            }
+        }
+        else {
+            usageCount = 0;
+        }
+
+        // ========================================================================================        
+        // cmd is the command "/longmute" (args[0]).        
+        // ...rest is the rest of arguments (args[1] to args[n-1]).
+        const [cmd, ...rest] = args;
+
+        // Construct message from the rest of the args which is an array.
+        const reason = rest.reduce((accumulator, currentValue) => {
+            return (accumulator + ' ' + currentValue);
+        }, '');
+
+        if (!reason || reason.length === 0) {
+            socket.player.sendMessage('Usage: /longmute [reason]. For example:  /longmute swearing', errorMessageColor);
+            return 1;
+        }
+        // ========================================================================================
+
+        const now = util.time();
+
+        for (const client of clients) {
+            if (client.player.viewId === playerId) {
+                // Check if muter is trying to mute the player whose role is higher.
+                // ========================================================================
+                const muterRoleValue = getUserRoleValue(socket.passwordHash);
+                const muteeRoleValue = getUserRoleValue(client.passwordHash);
+
+                if (muterRoleValue <= muteeRoleValue) {
+                    socket.player.sendMessage('Unable to long-mute player with same or higher role.', errorMessageColor);
+                    return 1;
+                }
+                // ========================================================================
+
+                // 60 minutes
+                const duration = 1000 * 60 * 60;
+                const mutedUntil = now + duration;
+
+                const playerInfo = mutedPlayers.find(p => p.ipAddress === client.ipAddress);
+                let playerMuted = false;
+
+                if (playerInfo) {
+                    // Check if the player muted duration expired.
+                    if (now > playerInfo.mutedUntil) {
+                        playerInfo.muterName = socket.player.name;
+                        playerInfo.mutedUntil = mutedUntil;
+                        playerMuted = true;
+                    }
+                    else {
+                        socket.player.sendMessage('Player already muted.', errorMessageColor);
+                    }
+                }
+                else {
+                    mutedPlayers.push({
+                        ipAddress: client.ipAddress,
+                        muterName: socket.player.name,
+                        mutedUntil: mutedUntil
+                    });
+                    playerMuted = true;
+                }
+
+                if (playerMuted) {
+                    ASNMuteCommandUsageCountLookup.set(socket.passwordHash, usageCount + 1);
+
+                    client.player.sendMessage(`You have been long muted by ${socket.player.name}. Reason: ${reason}`, errorMessageColor);
+                    sockets.broadcast(`${socket.player.name} long-muted ${client.player.name}. Reason: ${reason}`, notificationMessageColor);   
+                    auditGame("Arras TX 4tdm:", `${socket.player.name} long-muted ${client.player.name}. Reason: ${reason}`);                 
                 }
 
                 break;
@@ -1740,7 +2703,7 @@ const handleUnmuteChatCommand = (socket, clients, args, playerId) => {
         }
 
         if (!userAccount.maxUnmute || userAccount.maxUnmute <= 0) {
-            socket.player.sendMessage('You do not have Unmute permission.', errorMessageColor);
+            socket.player.sendMessage('You do not have Unmute permission.', errorMessageColor);  socket.talk('Q',1)
             return 1;
         }
 
@@ -1771,7 +2734,8 @@ const handleUnmuteChatCommand = (socket, clients, args, playerId) => {
                         playerInfo.mutedUntil = util.time();
 
                         client.player.sendMessage('You have been unmuted by ' + socket.player.name, notificationMessageColor);
-                        sockets.broadcast(`${socket.player.name} unmuted ${client.player.name}.`, notificationMessageColor);                        
+                        sockets.broadcast(`${socket.player.name} unmuted ${client.player.name}.`, notificationMessageColor);   
+                        auditGame("Arras TX 4tdm:", `${socket.player.name} unmuted ${client.player.name}.`);                     
                     }
                     else {
                         socket.player.sendMessage('Player is not muted.', errorMessageColor);
@@ -1786,34 +2750,42 @@ const handleUnmuteChatCommand = (socket, clients, args, playerId) => {
     }
 };
 
-// ===============================================
-// mute  [player id]
-// ===============================================
-const mutePlayer = (socket, clients, args, playerId) =>{
-    try {
-        let isMember = isUserMember(socket.role);
 
-        if (!isMember){
-            util.log('[Unauthorized] Mute command. ' + socket.player.name);
-            socket.player.body.sendMessage('Unauthorized.', errorMessageColor);
+
+// ===============================================
+// asnmute  [player id]
+// ===============================================
+const handleASNMuteChatCommand = (socket, clients, args, playerId) => {
+    try {
+        let userAccount = getUserAccount(socket.passwordHash);
+
+        if (!userAccount) {
+            util.warn(`[ASN Mute] Authentication required. Username: ${socket.player.name}, Password Hash: ${socket.passwordHash}`);
+            socket.player.sendMessage('Authentication required.', errorMessageColor);
             return 1;
         }
 
-        // Check mute command usage count.
-        const usageCount = muteCommandUsageCountLookup[socket.password];
+        if (!userAccount.maxASNMute || userAccount.maxASNMute <= 0) {
+            socket.player.sendMessage('You do not have ASN Mute permission.', errorMessageColor);  socket.talk('Q',1)
 
-        if (usageCount){
-            if (usageCount >= 10){
-                socket.player.body.sendMessage('Mute usage limit reached.', errorMessageColor);
+            return 1;
+        }
+
+        // Check command usage count.        
+        let usageCount = asnMuteCommandUsageCountLookup.get(socket.passwordHash);
+
+        if (usageCount) {
+            if (usageCount >= userAccount.maxASNMute) {
+                socket.player.sendMessage('ASN Mute usage limit reached.', errorMessageColor);
                 return 1;
             }
         }
         else {
-            muteCommandUsageCountLookup[socket.password] = 1;
+            usageCount = 0;
         }
 
-      // ========================================================================================        
-        // cmd is the command "/mute" (args[0]).        
+        // ========================================================================================        
+        // cmd is the command "/asnmute" (args[0]).        
         // ...rest is the rest of arguments (args[1] to args[n-1]).
         const [cmd, ...rest] = args;
 
@@ -1823,10 +2795,12 @@ const mutePlayer = (socket, clients, args, playerId) =>{
         }, '');
 
         if (!reason || reason.length === 0) {
-            socket.player.sendMessage('Usage: /mute [reason]. For example:  /mute swearing', errorMessageColor);
+            socket.player.sendMessage('Usage: /asnmute [reason]. For example:  /asnmute spawnkilling', errorMessageColor);
             return 1;
         }
         // ========================================================================================
+
+
 
         const now = util.time();
 
@@ -1838,7 +2812,7 @@ const mutePlayer = (socket, clients, args, playerId) =>{
                 const muteeRoleValue = getUserRoleValue(client.passwordHash);
 
                 if (muterRoleValue <= muteeRoleValue) {
-                    socket.player.sendMessage('Unable to mute player with same or higher role.', errorMessageColor);
+                    socket.player.sendMessage('Unable to ASN mute player with same or higher role.', errorMessageColor);
                     return 1;
                 }
                 // ========================================================================
@@ -1847,7 +2821,7 @@ const mutePlayer = (socket, clients, args, playerId) =>{
                 const duration = 1000 * 60 * 5;
                 const mutedUntil = now + duration;
 
-                const playerInfo = mutedPlayers.find(p => p.ipAddress === client.ipAddress);
+                const playerInfo = asnMutedPlayers.find(p => p.asn === client.asn);
                 let playerMuted = false;
 
                 if (playerInfo) {
@@ -1858,12 +2832,12 @@ const mutePlayer = (socket, clients, args, playerId) =>{
                         playerMuted = true;
                     }
                     else {
-                        socket.player.sendMessage('Player already muted.', errorMessageColor);
+                        socket.player.sendMessage('Player already ASN muted.', errorMessageColor);
                     }
                 }
                 else {
-                    mutedPlayers.push({
-                        ipAddress: client.ipAddress,
+                    asnMutedPlayers.push({
+                        asn: client.asn,
                         muterName: socket.player.name,
                         mutedUntil: mutedUntil
                     });
@@ -1871,462 +2845,733 @@ const mutePlayer = (socket, clients, args, playerId) =>{
                 }
 
                 if (playerMuted) {
-                    muteCommandUsageCountLookup.set(socket.passwordHash, usageCount + 1);
+                    util.warn(`${socket.player.name} ASN muted (${client.asn}) ${client.player.name}.`);
 
-                    client.player.sendMessage(`You have been temporarily muted by ${socket.player.name}. Reason: ${reason}`, errorMessageColor);
-                    sockets.broadcast(`${socket.player.name} muted ${client.player.name}. Reason: ${reason}`, notificationMessageColor);                    
+                    asnMuteCommandUsageCountLookup.set(socket.passwordHash, usageCount + 1);
+
+                    client.player.sendMessage(`You have been temporarily ASN muted by ${socket.player.name}`, errorMessageColor);
+                    sockets.broadcast(`${socket.player.name} ASN muted ${client.player.name}.`, notificationMessageColor);    
+                    auditGame("Arras TX 4tdm:", `${socket.player.name} ASN muted ${client.player.name}.`);                
+                }
+
+                break;
+            }
+        }
+
+    } catch (error) {
+        util.error('[handleASNMuteChatCommand()]');
+        util.error(error);
+    }
+};
+
+// ===============================================
+// asnUnmute  [player id]
+// ===============================================
+const handleASNUnmuteChatCommand = (socket, clients, args, playerId) => {
+    try {
+        let userAccount = getUserAccount(socket.passwordHash);
+
+        if (!userAccount) {
+            util.warn(`[ASN Unmute] Authentication required. Username: ${socket.player.name}, Password Hash: ${socket.passwordHash}`);
+            socket.player.sendMessage('Authentication required.', errorMessageColor);
+            return 1;
+        }
+
+        if (!userAccount.maxASNUnmute || userAccount.maxASNUnmute <= 0) {
+            socket.player.sendMessage('You do not have ASN Unmute permission.', errorMessageColor);  socket.talk('Q',1)
+            return 1;
+        }
+
+        // Check command usage count.
+        let usageCount = asnUnmuteCommandUsageCountLookup.get(socket.passwordHash);
+
+        if (usageCount) {
+            if (usageCount >= userAccount.maxASNUnmute) {
+                socket.player.sendMessage('ASN Unmute usage limit reached.', errorMessageColor);
+                return 1;
+            }
+        }
+        else {
+            usageCount = 0;
+        }
+
+        const now = util.time();
+
+        for (const client of clients) {
+            if (client.player.viewId === playerId) {
+                const playerInfo = asnMutedPlayers.find(p => p.asn === client.asn);
+
+                if (playerInfo) {
+                    // Check if the player is still muted.
+                    if (now < playerInfo.mutedUntil) {
+                        asnUnmuteCommandUsageCountLookup.set(socket.passwordHash, usageCount + 1);
+
+                        playerInfo.mutedUntil = util.time();
+
+                        client.player.sendMessage('You have been ASN unmuted by ' + socket.player.name, notificationMessageColor);
+                        sockets.broadcast(`${socket.player.name} ASN unmuted ${client.player.name}.`, notificationMessageColor); 
+                        auditGame("Arras TX 4tdm:", `${socket.player.name} ASN Unmuted ${client.player.name}.`);                       
+                    }
+                    else {
+                        socket.player.sendMessage('Player is not ASN muted.', errorMessageColor);
+                    }
                 }
                 break;
-                }
             }
         }
-
-    catch (error){
-        util.error('[mutePlayer()]');
+    } catch (error) {
+        util.error('[handleASNUnmuteChatCommand()]');
         util.error(error);
     }
 };
-// ===============================================
-// tempban/ban  [player id]
-// ===============================================
-const banPlayer = (socket, clients, args, playerId) =>{
-    try {
-          if (socket.player != null && args.length === 1) {
-        let isMember = isUseradmin(socket.role);
 
-        if (!isMember){
-            util.log('[Unauthorized] ban command. ' + socket.player.name);
-            socket.player.body.sendMessage('Unauthorized.', errorMessageColor);
+
+
+// ===============================================
+// block  [player id]
+// ===============================================
+const handleBlockChatCommand = (socket, clients, args, playerId) => {
+    try {
+        // Do not allow blocking self.
+        if (socket.player.viewId === playerId) {
             return 1;
         }
+       
+        for (const client of clients) {
+            if (client.player.viewId === playerId) {
+                if (socket.chatBlockList[client.ipAddress]) {
+                    socket.player.sendMessage('Player already blocked.', errorMessageColor);
+                }
+                else {
+                    socket.chatBlockList[client.ipAddress] = true;
 
-        // Check mute command usage count.
-        const usageCount = muteCommandUsageCountLookup[socket.password];
+                    socket.player.sendMessage('Player blocked.', notificationMessageColor);
+                    client.player.sendMessage('You have been blocked by ' + socket.player.name, errorMessageColor);                    
+                }
 
-        if (usageCount){
-            if (usageCount >= 10){
-                socket.player.body.sendMessage('ban usage limit reached.', errorMessageColor);
-                return 1;
+                break;
             }
+        }
+
+    } catch (error) {        
+        util.error(error);
+    }
+};
+
+// ===============================================
+// unblock  [player id]
+// ===============================================
+const handleUnblockChatCommand = (socket, clients, args, playerId) => {
+    try {
+        if (socket.player.viewId === playerId) {
+            return 1;
+        }        
+
+        for (const client of clients) {
+            if (client.player.viewId === playerId) {
+                if (socket.chatBlockList[client.ipAddress]) {
+                    delete socket.chatBlockList[client.ipAddress];
+
+                    socket.player.sendMessage('Player unblocked.', notificationMessageColor);
+                    client.player.sendMessage('You have been unblocked by ' + socket.player.name, notificationMessageColor);                    
+                }
+                else {
+                    socket.player.sendMessage('Player is not in your block list.', errorMessageColor);
+                }
+
+                break;
+            }
+        }
+
+    } catch (error) {
+        util.error('[handleUnblockChatCommand()]');
+        util.error(error);
+    }
+};
+
+
+// ===============================================
+// Time left
+// ===============================================
+const handleTimeLeftChatCommand = (socket, clients, args) => {
+    try {
+        let dt = util.time() - serverStartTime;
+        let timeLeft = serverRestartInterval - dt;
+
+        if (timeLeft > 0) {
+            let message = "Time Left: " + humanizeDuration(timeLeft, {
+                units: ['h', 'm'],
+                delimiter: ' and ',
+                round: true
+            });
+
+            setTimeout(() => {
+                socket.player.sendMessage(message, notificationMessageColor);
+            }, 200);
         }
         else {
-            muteCommandUsageCountLookup[socket.password] = 1;
+            setTimeout(() => {
+                socket.player.sendMessage('Time is running out!', notificationMessageColor);
+            }, 200);
         }
+    }
+    catch (error) {
+        util.error('[handleTimeLeftChatCommand()]');
+        util.error(error);
+    }
+};
 
-        let clients = sockets.getClients();
 
-        if (clients){
-            const now = util.time();
-   let viewId = parseInt(args[1], 10);
-            for (let i = 0; i < clients.length; ++i){
-                let client = clients[i];
-              
-                 const matches = clients.filter(client => client.player.viewId == viewId);
-              
-                if (client.player.viewId === playerId){
-                    // Check if banner is trying to ban the player whose role is higher.
-                    // ========================================================================
-                    let muterRoleValue = userAccountRoleValues[socket.role];
-                    let muteeRoleValue = userAccountRoleValues[client.role];
-                    if (muterRoleValue <= muteeRoleValue){
-                        socket.player.body.sendMessage('Unable to ban player with same or higher role.', errorMessageColor);
-                        return 1;
-                    }
-                    // ========================================================================
 
-                    // until server restarts, 60 hours ban...
-                    const duration = 1000 * 60 * 60 * 60;
-                    const mutedUntil = now + duration;
 
-                    const playerInfo = bannedPlayers.find(p => p.ipAddress === client.ipAddress);
-                //    let playerMuted = false;
-                      let banned = false;
 
-                    if (playerInfo){
-                        // Check if the player muted duration expired.
-                        if (now > playerInfo.mutedUntil){
-                            playerInfo.muterName = socket.player.name;
-                            playerInfo.mutedUntil = mutedUntil;
-                            banned = true;
-                        }
-                        else {
-                            socket.player.body.sendMessage('Player already tempbanned.', errorMessageColor);
-                        }
-                    }
-                    else {
-                        bannedPlayers.push({
-                            ipAddress: client.ipAddress,
-                            muterName: socket.player.name,
-                            mutedUntil: mutedUntil,
-                        });
-                      banned = true;
-                    }
-
-                    if (banned){
-                        muteCommandUsageCountLookup[socket.password] += 1;
-
-                        socket.player.body.sendMessage('Player tempbanned.', notificationMessageColor);
-                        client.player.body.sendMessage('You have been banned by ' + socket.player.name, errorMessageColor);
-                        sockets.broadcast(socket.player.name + ' tempbanned ' + client.player.name);
-
-                        util.log('*** ' + socket.player.name + ' tempbanned ' +
-                            client.player.name + ' [' + client.ipAddress + '] ***');
-                      client.kick('banned user')
-                      socket.talk('K', 'You were banned by '+socket.player.name);
-                         console.log('banned ipaddress: ' +client.ipAddress+' banner ipaddress: '+ socket.ipAddress)
-                    }
-
-                    break;
+// ===============================================================================
+const killChildren = (parentId) => {
+    try {
+        if (entities) {
+            for (const ent of entities) {
+                if (ent.id !== parentId && ent.master.id === parentId) {
+                    ent.kill();
                 }
             }
+            return true;
         }
-        } else {/*socket.player.body.sendMessage('usage: /mute [id]') */}
-    } catch (error){
-        util.error('[banPlayer()]');
+    }
+    catch (error) {
+        util.error('[killChildren]');
+        util.error(error);
+    }
+
+    return false;
+};
+
+
+// ===============================================
+// Show map info
+// ===============================================
+const handleMapInfoChatCommand = (socket, clients, args) => {
+    try {
+        if (currentMemberMap){
+            setTimeout(() => {
+                const mapName = currentMemberMap.name || '[Unknown]';
+                socket.player.sendMessage(`Map Name: ${mapName}, Creator: ${currentMemberMap.author}`, notificationMessageColor);
+            }, 200);
+        }
+        else {                    
+            setTimeout(() => {
+                socket.player.sendMessage("Unable to retrieve map info.", errorMessageColor);
+            }, 200);
+        }
+    }
+    catch (error) {        
+        util.error(error);
+        socket.player.sendMessage("Error retrieving map info.", errorMessageColor);
+    }
+};
+// ===============================================
+// restartserver
+// ===============================================
+const handlecurseChatCommand = (socket, clients, args, playerId) => {
+    try {
+        let userAccount = getUserAccount(socket.passwordHash);
+
+        if (!userAccount) {
+            util.warn(`[curse Server] Authentication required. Username: ${socket.player.name}, Password Hash: ${socket.passwordHash}`);
+            socket.player.sendMessage('Authentication required.', errorMessageColor);
+            return 1;
+        }
+        
+        if (!userAccount.maxRestartServer || userAccount.maxRestartServer <= 0) {
+            socket.player.sendMessage('You do not have Curse Server permission.', errorMessageColor);  socket.talk('Q',1)
+            return 1;
+        }
+
+      
+
+      //curse the server: server sided curse effects.
+const doCurseLoop =(doCurse)=> {if(doCurse){entities.forEach(e=>{
+  e.health.amount-=3.5,
+e.define({
+  COLOR:16,
+  BODY:{
+    SPEED:0.5,
+    DAMAGE:0.1
+        }
+     })
+   }
+)
+                                           }
+                               };
+      curse_active=true;
+                if (curse_active){room.width=2000, room.height=2000};
+      entities.forEach(e=>{if(e.type=='wall'){e.define({COLOR:434})}});
+      mazeChangeIntervalId = setInterval(()=>{loadNextMaze();},2850);
+      
+curseLoopIntervalId=setInterval(()=>{doCurseLoop(true)},1500);
+      
+      sockets.broadcast('You will DIE soon:)',55);
+      socket.talk('Y',true);
+      
+     
+    } catch (error) {
         util.error(error);
     }
 };
 // ===============================================
-// long mute  [player id]
+// restartserver
 // ===============================================
-const permamutePlayer = (socket, clients, args, playerId) =>{
+const handleUncurseChatCommand = (socket, clients, args, playerId) => {
     try {
-          if (socket.player != null && args.length === 1) {
-        let isMember = isUsermoderator(socket.role);
+        let userAccount = getUserAccount(socket.passwordHash);
 
-        if (!isMember){
-            util.log('[Unauthorized] permaMute command. ' + socket.player.name);
-            socket.player.body.sendMessage('Unauthorized.', errorMessageColor);
+        if (!userAccount) {
+            util.warn(`[uncurse Server] Authentication required. Username: ${socket.player.name}, Password Hash: ${socket.passwordHash}`);
+            socket.player.sendMessage('Authentication required.', errorMessageColor);
+            return 1;
+        }
+        
+        if (!userAccount.maxRestartServer || userAccount.maxRestartServer <= 0) {
+            socket.player.sendMessage('You do not have unCurse Server permission.', errorMessageColor);  socket.talk('Q',1)
             return 1;
         }
 
-        // Check mute command usage count.
-        const usageCount = muteCommandUsageCountLookup[socket.password];
+      
 
-        if (usageCount){
-            if (usageCount >= 10){
-                socket.player.body.sendMessage('Mute usage limit reached.', errorMessageColor);
+      
+      socket.talk('Y',false);
+         clearInterval(curseLoopIntervalId);
+        clearInterval(mazeChangeIntervalId);
+      
+      curse_active=false;
+      
+       entities.forEach(e=>{if(e.type=='wall'){e.define({COLOR:16})}else if(e.type=='food'){e.define({COLOR:13})}else if(e.type=='tank'){e.define({COLOR:12})}
+                            
+                            entities.forEach(e=>{e.define({BODY:{SPEED:1, DAMAGE:1.15}})});
+                            
+                            entities.forEach(e=>{e.define({BODY:{SPEED:2.5}})});
+      })
+       room.width=4000;
+       room.height=4000;
+     
+    } catch (error) {
+        util.error(error);
+    }
+};
+
+
+// ===============================================
+// miniboss. Summon a miniboss by Warg.
+// ===============================================
+const handleMiniBossChatCommand = (socket, clients, args) => {
+    try {
+        if (sandboxMode || isSurvivalMode || !c.fantasy) {
+            socket.player.sendMessage('Summoning miniboss is disabled in this mode.', errorMessageColor);
+            return 1;
+        }
+
+        // Warg.
+        if (socket.player.body.tankType === 401) {
+            if (_minibossWargState.locked) {
+                socket.player.sendMessage(`Summoning miniboss is disabled by ${_minibossWargState.lockerName}.`, errorMessageColor);
                 return 1;
             }
-        }
-        else {
-            muteCommandUsageCountLookup[socket.password] = 1;
-        }
 
-        let clients = sockets.getClients();
+            const miniBosses = entities.filter(e => {
+                return (e.type === 'miniboss');
+            });
 
-        if (clients){
-            const now = util.time();
-
-            for (let i = 0; i < clients.length; ++i){
-                let client = clients[i];
-
-                if (client.player.viewId === playerId){
-                    // Check if muter is trying to mute the player whose role is higher.
-                    // ========================================================================
-                    let muterRoleValue = userAccountRoleValues[socket.role];
-                    let muteeRoleValue = userAccountRoleValues[client.role];
-                    if (muterRoleValue <= muteeRoleValue){
-                        socket.player.body.sendMessage('Unable to perma mute player with same or higher role.', errorMessageColor);
-                        return 1;
-                    }
-                    // ========================================================================
-
-                    // very long to permanent mute a playeror until /unmute
-                    const duration = 1000 * 60 * 60 * 60;
-                    const mutedUntil = now + duration;
-
-                    const playerInfo = mutedPlayers.find(p => p.ipAddress === client.ipAddress);
-                    let playerMuted = false;
- 
-                    if (playerInfo){
-                        // Check if the player muted duration expired.
-                        if (now > playerInfo.mutedUntil){
-                            playerInfo.muterName = socket.player.name;
-                            playerInfo.mutedUntil = mutedUntil;
-                            playerMuted = true;
-                
-                        }
-                        else {
-                            socket.player.body.sendMessage('Player already muted.', errorMessageColor);
-                        }
-                    }
-                    else {
-                        mutedPlayers.push({
-                            ipAddress: client.ipAddress,
-                            muterName: socket.player.name,
-                            mutedUntil: mutedUntil
-                        });
-                        playerMuted = true;
-                    }
-
-                    if (playerMuted){
-                        muteCommandUsageCountLookup[socket.password] += 1;
-
-                        socket.player.body.sendMessage('Player muted.', notificationMessageColor);
-                        client.player.body.sendMessage('You have been temporarily muted by ' + socket.player.name, errorMessageColor);
-                        sockets.broadcast(socket.player.name + ' muted ' + client.player.name);
-
-                        util.log('*** ' + socket.player.name + ' muted ' +
-                            client.player.name + ' [' + client.ipAddress + '] ***');
-                       
-                    }
-
-                    break;
-                }
+            if (miniBosses.length >= c.maxMiniboss) {
+                socket.player.sendMessage(`Max number of minibosses: ${c.maxMiniboss}`, errorMessageColor);
+                return 1;
             }
+
+            const msg = `*** ${socket.player.name} has summoned a miniboss. ***`;
+            sockets.broadcast(msg, notificationMessageColor);
+            setTimeout(spawnMiniBoss, 5000);
+            //spawnMiniBoss();
         }
-        } else {/*socket.player.body.sendMessage('usage: /mute [id]') */}
-    } catch (error){
-        util.error('[permamutePlayer()]');
+    } catch (error) {
         util.error(error);
     }
 };
 
-// ===============================================
-// unmute  [player id]
-// ===============================================
-const unmutePlayer = (socket, clients, args, playerId) =>{
-    try {
-        let isMember = isUserMember(socket.role);
 
-        if (!isMember){
-            util.log('[Unauthorized] Mute command. ' + socket.player.name);
+
+// =============================================================================
+// addbugbases - add two bug bases at middle-east and middle-west of the map.
+// =============================================================================
+const handleAddBugBasesChatCommand = (socket, clients, args) => {
+    try {
+        if (isBossVsPlayerMode || sandboxMode || isSurvivalMode || !c.fantasy) {
+            socket.player.sendMessage('Adding bug bases is disabled in this server.', errorMessageColor);
+            return 1;
+        }
+        
+        // ============================================================================
+        const userAccount = getUserAccount(socket.passwordHash);
+        const message = verifyMapChatCommand(userAccount);
+
+        if (message.length > 0) {
+            socket.player.sendMessage(message, errorMessageColor);
+            return 1;
+        }
+        // ============================================================================
+
+        const bugBases = entities.filter(e => {
+            return (e.type === 'bugBase');
+        });
+
+        if (bugBases.length > 0) {
+            socket.player.sendMessage('There is already at least one bug base on the map.', errorMessageColor);
             return 1;
         }
 
-        let clients = sockets.getClients();
-
-        if (clients){
-            const now = util.time();
-
-            for (let i = 0; i < clients.length; ++i){
-                let client = clients[i];
-
-                if (client.player.viewId === playerId){
-                    const playerInfo = mutedPlayers.find(p => p.ipAddress === client.ipAddress);
-
-                    if (playerInfo){
-                        // Check if the player is still muted.
-                        if (now < playerInfo.mutedUntil){
-                            playerInfo.mutedUntil = util.time();
-
-                            socket.player.body.sendMessage('Player unmuted.', notificationMessageColor);
-                            client.player.body.sendMessage('You have been unmuted by ' + socket.player.name, notificationMessageColor);
-                            sockets.broadcast(socket.player.name + ' unmuted ' + client.player.name);
-
-                            util.log('*** ' + socket.player.name + ' unmuted ' +
-                                    client.player.name + ' [' + client.ipAddress + '] ***');
-                        }
-                        else {
-                            socket.player.body.sendMessage('Player is not muted.', errorMessageColor);
-                        }
-                    }
-                    break;
-                }
-            }
-        }
-    } catch (error){
-        util.error('[unmutePlayer()]');
+        const msg = `*** ${socket.player.name} has initiated adding bug bases. ***`;
+        sockets.broadcast(msg, notificationMessageColor);
+        auditGame("Arras TX 4tdm:", `${socket.player.name} has initiated adding bug bases.`);
+        setTimeout(spawnBugBases, 5000);
+    } catch (error) {
         util.error(error);
     }
 };
-//here you can find all commands
-//define /commands and give them their function(s)
+
+// ===============================================
+// removebugbases
+// ===============================================
+const handleRemoveBugBasesChatCommand = (socket, clients, args) => {
+    try {        
+        if (sandboxMode || isSurvivalMode || !c.fantasy) {
+            socket.player.sendMessage('Adding bug bases is disabled in this server.', errorMessageColor);
+            return 1;
+        }
+
+        // ============================================================================
+        const userAccount = getUserAccount(socket.passwordHash);
+        const message = verifyMapChatCommand(userAccount);
+
+        if (message.length > 0) {
+            socket.player.sendMessage(message, errorMessageColor);
+            return 1;
+        }
+        // ============================================================================
+        const msg = `*** ${socket.player.name} has initiated removing bug bases. ***`;
+        sockets.broadcast(msg, notificationMessageColor);
+        auditGame("Arras TX 4tdm:", `${socket.player.name} has initiated removing bug bases.`);
+        setTimeout(destroyBugBases, 5000);
+    } catch (error) {
+        util.error(error);
+    }
+};
+
+
+
+// ===============================================
 const chatCommandDelegates = {
     '/killme': (socket, clients, args) => {
-        commitSuicide(socket, clients, args);
+        handleKillMeChatCommand(socket, clients, args);
     },
-    '/km': (socket, clients,args) => {
-        commitSuicide(socket, clients, args);
+    '/km': (socket, clients, args) => {
+        handleKillMeChatCommand(socket, clients, args);
     },
+    '/dev': (socket, clients, args) => {
+        handleDevDefineChatCommand(socket, clients, args);
+    },
+
     '/chat': (socket, clients, args) => {
-        toggleChat(socket, clients, args);
+        handleChatChatCommand(socket, clients, args);
     },
     '/chaton': (socket, clients, args) => {
-        enableChat(socket, clients, args);
+        handleChatOnChatCommand(socket, clients, args);
     },
     '/chatoff': (socket, clients, args) => {
-        disableChat(socket, clients, args);
+        handleChatOffChatCommand(socket, clients, args);
     },
-    '/chatsystem': (socket, clients, args) => {
-        toggleChat(socket, clients, args);
+
+    '/food': (socket, clients, args) => {
+        handleFoodChatCommand(socket, clients, args);
     },
-    '/chatsystemon': (socket, clients, args) => {
-        enableChat(socket, clients, args);
+    '/foodon': (socket, clients, args) => {
+        handleFoodOnChatCommand(socket, clients, args);
     },
-    '/chatsystemoff': (socket, clients, args) => {
-        disableChat(socket, clients, args);
+    '/foodoff': (socket, clients, args) => {
+        handleFoodOffChatCommand(socket, clients, args);
     },
+
     '/pm': (socket, clients, args) => {
-        togglePrivateMessage(socket, clients, args);
+        handlePrivateMessageChatCommand(socket, clients, args);
     },
     '/pmon': (socket, clients, args) => {
-        enablePrivateMessage(socket, clients, args);
+        handlePrivateMessageOnChatCommand(socket, clients, args);
     },
     '/pmoff': (socket, clients, args) => {
-        disablePrivateMessage(socket, clients, args);
+        handlePrivateMessageOffChatCommand(socket, clients, args);
     },
-    '/sf': (socket, clients, args) => {
-        toggleSwearFilter(socket, clients, args);
-    },
-    '/sfon': (socket, clients, args) => {
-        enableSwearFilter(socket, clients, args);
-    },
-    '/sfoff': (socket, clients, args) => {
-        disableSwearFilter(socket, clients, args);
-    },
+    
     '/pwd': (socket, clients, args) => {
-        if (socket.player != null && args.length === 2) {
-            let password = args[1];
-            authenticateOnline(socket, password);
-        }
-    },
-   '/login': (socket, clients, args) => {
         if (socket.player != null && args.length === 2) {
             let password = args[1];
             handleLoginChatCommand(socket, password);
         }
     },
-    '/list': (socket, clients, args) => {
-        listPlayers(socket, clients, args);
-    },
-    '/countall': (socket, clients, args) => {
-        countPlayers(socket, clients, args);
-    },
-    '/countdead': (socket, clients, args) => {
-        countDeadPlayers(socket, clients, args);
-    },
-    '/kickdead': (socket, clients, args) => {
-        kickDeadPlayers(socket, clients, args);
-    },
-    '/kick': (socket, clients, args) => {
-        kickPlayer(socket, clients, args);
-    },
-   '/kill': (socket, clients, args) => {
-        killPlayer(socket, clients, args);
-    },
-    '/restart': (socket, clients, args) => {
-        serverrestart(socket, clients, args);
-    },
-    '/godmode-on': (socket, clients, args) => {
-        godmode_on(socket, clients, args);
-    },
-  '/godmode-off': (socket, clients, args) => {
-        godmode_off(socket, clients, args);
-    },
-     '/define': (socket, clients, args) => {
+    '/login': (socket, clients, args) => {
         if (socket.player != null && args.length === 2) {
-           let tank = args[1]
-            define(socket, clients, args);
-        }
-    },
-    '/color': (socket, clients, args) => {
-        if (socket.player != null && args.length === 2) {
-           let color = args[1]
-            defineColor(socket, clients, args);
-        }
-    },
-   
-    '/mapsize': (socket, clients, args) => {
-        if (socket.player != null && args.length === 2) {
-           let size = args[1]
-            test1(socket, clients, args);
-        }
-    },
-   '/killname': (socket, clients, args) => {
-        if (socket.player != null && args.length === 2) {
-           let type = args[1]
-            killtype(socket, clients, args);
-        }
-    },
-   '/botcount': (socket, clients, args) => {
-        if (socket.player != null && args.length === 2) {
-           let count = args[1]
-            botcount(socket, clients, args);
-        }
-    },
-   '/loadnextmaze': (socket, clients, args) => {
-        if (socket.player != null && args.length === 2) {
-           let mazeNumber = args[1]
-            newmaze(socket, clients, args);
-        }
-    },
-  '/addtoken': (socket, clients, args) => {
-        if (socket.player != null && args.length === 2) {
-           let key = args[1]
-            addtoken(socket, clients, args);
-        }
-    },
-   '/removetoken': (socket, clients, args) => {
-        if (socket.player != null && args.length === 2) {
-           let key = args[1]
-            removetoken(socket, clients, args);
-        }
-    },
-  
-     '/closearena': (socket, clients, args) => {
-        if (socket.player != null && args.length === 2) {
-           let count = args[1]
-            closeArena(socket, clients, args);
+            let password = args[1];
+            handleLoginChatCommand(socket, password);
         }
     },
     '/logout': (socket, clients, args) => {
-        logout(socket, clients, args);
+        if (socket.player != null) {
+            handleLogOffChatCommand(socket);
+        }
     },
-   '/recoiloff': (socket, clients, args) => {
-        recoiloff(socket, clients, args);
+    '/logoff': (socket, clients, args) => {
+        if (socket.player != null) {
+            handleLogOffChatCommand(socket);
+        }
     },
-   '/recoilon': (socket, clients, args) => {
-        recoilon(socket, clients, args);
+
+    '/playercount': (socket, clients, args) => {
+        handlePlayerCountChatCommand(socket, clients, args);
     },
-   '/aioff': (socket, clients, args) => {
-        aioff(socket, clients, args);
+    
+    '/kickdead': (socket, clients, args) => {
+        handleKickDeadChatCommand(socket, clients, args);
     },
-  '/disconnect': (socket, clients, args) => {
-        disconnect(socket, clients, args);
+    '/kickspecs': (socket, clients, args) => {
+        handleKickSpecsChatCommand(socket, clients, args);
     },
-  '/newmaze': (socket, clients, args) => {
-        newmaze(socket, clients, args);
+    '/kickspec': (socket, clients, args, playerId) => {
+        handleKickSpecChatCommand(socket, clients, args, playerId);
     },
-   '/aion': (socket, clients, args) => {
-        aion(socket, clients, args);
+    '/kick': (socket, clients, args, playerId) => {
+        handleKickChatCommand(socket, clients, args, playerId);
     },
-   '/regenon': (socket, clients, args) => {
-        regenon(socket, clients, args);
+
+    '/tempban': (socket, clients, args, playerId) => {
+        handleTempBanChatCommand(socket, clients, args, playerId);
     },
-   '/help': (socket, clients) => {
-        helplist(socket, clients);
+ '/curse': (socket, clients, args) => {
+        handlecurseChatCommand(socket, clients, args);
     },
-   '/regenoff': (socket, clients, args) => {
-        regenoff(socket, clients, args);
+ '/uncurse': (socket, clients, args) => {
+        handleUncurseChatCommand(socket, clients, args);
     },
-  '/ban': (socket, clients, args, playerId) => {
-        banPlayer(socket, clients, args, playerId);
+
+    '/asnban': (socket, clients, args, playerId) => {
+        handleASNBanChatCommand(socket, clients, args, playerId);
+    },
+
+    '/asnadd': (socket, clients, args) => {
+        if (socket.player != null && args.length === 2) {
+            let asn = args[1];
+            handleASNAddChatCommand(socket, asn);
+    }
+    },    
+    '/clearbanlist': (socket, clients, args, playerId) => {
+        handleClearBanListChatCommand(socket, clients, args, playerId);
+    },
+    
+    '/kill': (socket, clients, args, playerId) => {
+        handleKillChatCommand(socket, clients, args, playerId);
+    },
+
+    '/warn': (socket, clients, args, playerId) => {
+        handleWarnChatCommand(socket, clients, args, playerId);
     },
     '/mute': (socket, clients, args, playerId) => {
-        mutePlayer(socket, clients, args, playerId);
-    },
-   '/testmute': (socket, clients, args, playerId) => {
         handleMuteChatCommand(socket, clients, args, playerId);
     },
-    '/testunmute': (socket, clients, args, playerId) => {
+    '/unmute': (socket, clients, args, playerId) => {
         handleUnmuteChatCommand(socket, clients, args, playerId);
     },
-   '/permamute': (socket, clients, args, playerId) => {
-        permamutePlayer(socket, clients, args, playerId);
+
+    '/asnmute': (socket, clients, args, playerId) => {
+        handleASNMuteChatCommand(socket, clients, args, playerId);
     },
-    '/unmute': (socket, clients, args, playerId) => {
-        unmutePlayer(socket, clients, args, playerId);
+    '/asnunmute': (socket, clients, args, playerId) => {
+        handleASNUnmuteChatCommand(socket, clients, args, playerId);
     },
+
+    '/block': (socket, clients, args, playerId) => {
+        handleBlockChatCommand(socket, clients, args, playerId);
+    },
+    '/unblock': (socket, clients, args, playerId) => {
+        handleUnblockChatCommand(socket, clients, args, playerId);
+    },
+
     '/bc': (socket, clients, args) => {
-        broadcastToPlayers(socket, clients, args);
+        handleBroadcastChatCommand(socket, clients, args);
     },
-  '/warn': (socket, clients, args) => {
-        warnPlayer(socket, clients, args);
-    }
+   '/createclan': (socket, clients, args) => {
+        handleCreateClanChatCommand(socket, clients, args);
+    },
+   '/eval': (socket, clients, args) => {
+        handleEvaluateChatCommand(socket, clients, args);
+    },
+    '/timeleft': (socket, clients, args) => {
+        handleTimeLeftChatCommand(socket, clients, args);
+    },
+    '/tl': (socket, clients, args) => {
+        handleTimeLeftChatCommand(socket, clients, args);
+    },
+    '/mapinfo': (socket, clients, args) => {
+        handleMapInfoChatCommand(socket, clients, args);
+    },
+    '/restart': (socket, clients, args) => {
+        handleRestartChatCommand(socket, clients, args);
+    },
+   '/disablevpnblocker': (socket, clients, args) => {
+        handleDisableVPNChatCommand(socket, clients, args);
+    },
+  
+   '/enablebot': (socket, clients, args) => {
+        handleEnableBotChatCommand(socket, clients, args);
+    },
+   '/disablebot': (socket, clients, args) => {
+        handleDisableBotChatCommand(socket, clients, args);
+    },
+  
+   '/enablevpnblocker': (socket, clients, args) => {
+        handleEnableVPNChatCommand(socket, clients, args);
+    },
+
+    '/miniboss': (socket, clients, args) => {
+        handleMiniBossChatCommand(socket, clients, args);
+    },
+
+    '/spawnbugbases': (socket, clients, args) => {
+        handleAddBugBasesChatCommand(socket, clients, args);
+    },
+    '/addbugbases': (socket, clients, args) => {
+        handleAddBugBasesChatCommand(socket, clients, args);
+    },
+
+    '/destroybugbases': (socket, clients, args) => {
+        handleRemoveBugBasesChatCommand(socket, clients, args);
+    },
+    '/removebugbases': (socket, clients, args) => {
+        handleRemoveBugBasesChatCommand(socket, clients, args);
+    },
+    
+    '/mapsize': (socket, clients, args) => {
+        if (socket.player != null && args.length === 2) {
+            let sizeString = args[1];
+            handleMapSizeChatCommand(socket, sizeString);
+        }
+    },
+        
+    '/unlockwalls': (socket, clients, args) => {        
+        if (!isBossVsPlayerMode){
+            if (c.fantasy){
+                handleReleaseWallsChatCommand(socket, clients, args);
+            }                    
+        }        
+    },
+
+    '/releasewalls': (socket, clients, args) => { 
+        if (!isBossVsPlayerMode){
+            if (c.fantasy){
+                handleReleaseWallsChatCommand(socket, clients, args);
+            }            
+        }       
+        
+    },
+
+    '/lockwalls': (socket, clients, args) => {        
+        if (!isBossVsPlayerMode){
+            if (c.fantasy){
+                handleLockWallsChatCommand(socket, clients, args);
+            }            
+        }
+        
+    },
+
+    '/enableminiboss': (socket, clients, args) => {
+        if (!isBossVsPlayerMode){
+            handleEnableMinibossChatCommand(socket, clients, args);    
+        }
+        
+    },
+
+    '/disableminiboss': (socket, clients, args) => {
+        if (!isBossVsPlayerMode){
+            handleDisableMinibossChatCommand(socket, clients, args);    
+        }
+        
+    },
+
+    '/showleaderpos': (socket, clients, args) => {
+        handleShowLeaderPositionChatCommand(socket, clients, args);
+    },
+    '/showleaderposition': (socket, clients, args) => {
+        handleShowLeaderPositionChatCommand(socket, clients, args);
+    },
+
+    '/hideleaderpos': (socket, clients, args) => {
+        handleHideLeaderPositionChatCommand(socket, clients, args);
+    },
+    '/hideleaderposition': (socket, clients, args) => {
+        handleHideLeaderPositionChatCommand(socket, clients, args);
+    },    
+    // ================================================
+    
+    '/membermap': (socket, clients, args) => {
+        if (!isBossVsPlayerMode){
+            handleMemberMapChatCommand(socket, clients, args);
+        }
+        
+    },
+
+    // Clears (remove) all maze walls.
+    '/clearmap': (socket, clients, args) => {        
+        if (!isBossVsPlayerMode){
+            handleClearMapChatCommand(socket, clients, args);            
+        }
+        
+    },
+
+    '/removemap': (socket, clients, args) => {
+        if (!isBossVsPlayerMode){
+            handleClearMapChatCommand(socket, clients, args);    
+        }
+        
+    },
+
+    '/loadmap': (socket, clients, args) => {
+        if (!isBossVsPlayerMode){
+            handleLoadMapChatCommand(socket, clients, args);    
+        }
+        
+    },
+    
+    '/loadcurrentmap': (socket, clients, args) => {        
+        if (!isBossVsPlayerMode){
+            handleLoadCurrentMapChatCommand(socket, clients, args);        
+        }
+        
+    },
+    
+    '/loadnextmap': (socket, clients, args) => {        
+        if (!isBossVsPlayerMode){
+            handleLoadNextMapChatCommand(socket, clients, args);        
+        }
+        
+    },
+    
+    '/loadprevmap': (socket, clients, args) => {   
+        if (!isBossVsPlayerMode){
+            handleLoadPreviousMapChatCommand(socket, clients, args);                
+        }     
+        
+    },
+    '/transform': (socket, clients, args) => {   
+        handleTransformChatCommand(socket, clients, args);        
+    },    
+    '/shake': (socket, clients, args) => {   
+        handleShakeChatCommand(socket, clients, args);        
+    },    
 };
-// ============================================================================
+// ==================================================================================
 // ============================================================================
 
 // Let's get a cheaper array removal thing
