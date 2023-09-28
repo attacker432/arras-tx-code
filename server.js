@@ -38,8 +38,53 @@ const notificationMessageColor = 14;
 const pmMessageColor = 13;
 const successMessageColor = 11;
 const errorMessageColor = 12;
+
+const _mazeWallsState = {
+    locked: true,
+    lockerRoleValue: 0,
+    lockerName: 'Server'
+};
+
+// Enable/disable '/miniboss' chat command (by Warg) to summon a miniboss.
+const _minibossWargState = {
+    locked: c.ruleless ? false : true,
+    lockerRoleValue: 0,
+    lockerName: 'Server'
+};
+
+// Show/hide leader position on minimap.
+const _leaderMinimapState = {
+    show: true,
+    userRoleValue: 0,
+    userName: 'Server'
+};
+
+// ================================================
+// Death camera.
+let playerKillers = [];
+
+// Muted players for chat system.
+let mutedPlayers = [];
+const asnMutedPlayers = [];
+
+const muteCommandUsageCountLookup = new Map();
+const unmuteCommandUsageCountLookup = new Map();
+const kickSpecsCommandUsageCountLookup = new Map();
+const kickDeadCommandUsageCountLookup = new Map();
+const kickCommandUsageCountLookup = new Map();
+const killCommandUsageCountLookup = new Map();
+const warnCommandUsageCountLookup = new Map();
+const broadcastCommandUsageCountLookup = new Map();
+const tempBanCommandUsageCountLookup = new Map();
+const asnBanCommandUsageCountLookup = new Map();
+const asnAddCommandUsageCountLookup = new Map();
+const clearBanListCommandUsageCountLookup = new Map();
+const asnMuteCommandUsageCountLookup = new Map();
+const asnUnmuteCommandUsageCountLookup = new Map();
+const restartServerCommandUsageCountLookup = new Map();
+
 var keys = [
-      process.env.dev_server_token,
+  process.env.dev_server_token,
   process.env.token_green,
   process.env.token_red,
   process.env.token_yellow,
@@ -62,7 +107,7 @@ const auditGame = (ipAddress, action) => {
         const data = {
             ipAddress: ipAddress,
             action: action,
-            serverName: co.onlineMembership.serverName ? c.onlineMembership.serverName : null,
+            serverName: co.onlineMembership.serverName ? co.onlineMembership.serverName : null,
             serverToken: co.onlineMembership.serverToken
         };
 
@@ -88,15 +133,7 @@ const maxChatLettersPerSecond = 7;
 const maxChatMessageLength = 100;
 
 let regExList = [];
-// Muted players for chat system.
-let mutedPlayers = [];
 let bannedPlayers = [];
-let muteCommandUsageCountLookup = {};
-const tempBanCommandUsageCountLookup = new Map();
-const asnBanCommandUsageCountLookup = new Map();
-const asnAddCommandUsageCountLookup = new Map();
-const clearBanListCommandUsageCountLookup = new Map();
-
 // Authentication.
 //let userAccounts = require('./chat_user.json');
 let userAccountsChatColors = require('./chat_user_role_color.json');
@@ -1081,7 +1118,7 @@ const authenticateOnline = (socket, passwordHash) => {
             // Status code other than 200 (i.e. 401, 403, etc).
             .catch(error => {
                 socket.player.sendMessage('Authentication server may be offline. Please try again later.', errorMessageColor);
-          socket.player.sendMessage(`Authentication server url(needs api key): ${c.onlineMembership.url}`, errorMessageColor);
+          socket.player.sendMessage(`Authentication server url(needs api key): ${co.onlineMembership.url}`, errorMessageColor);
             });
     } catch (error) {
         util.error(error);
@@ -2185,11 +2222,6 @@ const handleEnableMinibossChatCommand = (socket, clients, args) => {
 // =========================================================
 const handleDisableMinibossChatCommand = (socket, clients, args) => {
     try {
-        if (sandboxMode) {
-            socket.player.sendMessage('Summoning miniboss is disabled in this server.', errorMessageColor);
-            return 1;
-        }
-
         // ============================================================================
         const userAccount = getUserAccount(socket.passwordHash);
         const message = verifyMinibossChatCommand(userAccount);
@@ -2226,10 +2258,6 @@ const handleDisableMinibossChatCommand = (socket, clients, args) => {
 // =======================================================
 const handleShowLeaderPositionChatCommand = (socket, clients, args) => {
     try {
-        if (sandboxMode) {
-            socket.player.sendMessage('Leader position on minimap is disabled in sandbox.', errorMessageColor);
-            return 1;
-        }
 
         // ============================================================================
         const userAccount = getUserAccount(socket.passwordHash);
@@ -2269,10 +2297,6 @@ const handleShowLeaderPositionChatCommand = (socket, clients, args) => {
 // =========================================================
 const handleHideLeaderPositionChatCommand = (socket, clients, args) => {
     try {
-        if (sandboxMode) {
-            socket.player.sendMessage('Leader position on minimap is disabled in sandbox.', errorMessageColor);
-            return 1;
-        }
 
         // ============================================================================
         const userAccount = getUserAccount(socket.passwordHash);

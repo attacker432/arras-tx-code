@@ -1,6 +1,8 @@
 { "onlineMembership":{      
       "url": "https://arras-tx-membership.glitch.me/authenticate",
-      "serverToken":"BFD876407F875E0698ED3B5E8BF5A983B9179CFA4759ED488CF66A457A3D0A9D"      
+      "serverToken":"BFD876407F875E0698ED3B5E8BF5A983B9179CFA4759ED488CF66A457A3D0A9D",
+      "auditUrl":"https://arras-tx-membership.glitch.me/audit-game",
+      "serverName":"Arras TX Main"
     },
 
    "chatSettings":{
