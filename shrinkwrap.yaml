@@ -9,7 +9,7 @@ dependencies:
   google-closure-library: 20201102.0.1
   lodash: 4.17.21
   mongodb: 4.1.1
-  node-fetch: 2.6.1
+  node-fetch: 2.7.0
   nodemon: 2.0.12
   ssh-spawner: 2.1.1
   ws: 6.2.2
@@ -1040,12 +1040,16 @@ packages:
       node: '>= 0.6'
     resolution:
       integrity: sha512-hZXc7K2e+PgeI1eDBe/10Ard4ekbfrrqG8Ep+8Jmf4JID2bNg7NvCPOZN+kfF574pFQI7mum2AUqDidoKqcTOw==
-  /node-fetch/2.6.1:
+  /node-fetch/2.7.0:
+    dependencies:
+      whatwg-url: 5.0.0
     dev: false
     engines:
       node: 4.x || >=6.0.0
+    peerDependencies:
+      encoding: ^0.1.0
     resolution:
-      integrity: sha512-V4aYg89jEoVRxRb2fJdAg8FHvI7cEyYdVAh94HH0UIK8oJxUfkjlDQN9RbMx+bEjP7+ggMiFRprSti032Oipxw==
+      integrity: sha512-c4FRfUm/dbcWZ7U+1Wq0AwCyFL+3nt2bEw05wfxSz+DWpWsitgmSgYmy2dQdWyKC1694ELPqMs/YzUSNozLt8A==
   /nodemon/2.0.12:
     dependencies:
       chokidar: 3.5.2
@@ -1439,6 +1443,10 @@ packages:
     hasBin: true
     resolution:
       integrity: sha512-WBx8Uy5TLtOSRtIq+M03/sKDrXCLHxwDcquSP2c43Le03/9serjQBIztjRz6FkJez9D/hleyAXTBGLwwZUw9lA==
+  /tr46/0.0.3:
+    dev: false
+    resolution:
+      integrity: sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==
   /tr46/2.1.0:
     dependencies:
       punycode: 2.1.1
@@ -1549,12 +1557,23 @@ packages:
       node: '>= 0.8'
     resolution:
       integrity: sha1-IpnwLG3tMNSllhsLn3RSShj2NPw=
+  /webidl-conversions/3.0.1:
+    dev: false
+    resolution:
+      integrity: sha512-2JAn3z8AR6rjK8Sm8orRC0h/bcl/DqL7tRPdGZ4I1CjdF+EaMLmYxBHyXuKL849eucPFhvBoxMsflfOb8kxaeQ==
   /webidl-conversions/6.1.0:
     dev: false
     engines:
       node: '>=10.4'
     resolution:
       integrity: sha512-qBIvFLGiBpLjfwmYAaHPXsn+ho5xZnGvyGvsarywGNc8VyQJUMHJ8OBKGGrPER0okBeMDaan4mNBlgBROxuI8w==
+  /whatwg-url/5.0.0:
+    dependencies:
+      tr46: 0.0.3
+      webidl-conversions: 3.0.1
+    dev: false
+    resolution:
+      integrity: sha512-saE57nupxk6v3HY35+jzBwYa0rKSy0XR8JSxZPwgLr7ys0IBzhGviA1/TUGJLmSVqs8pb9AnvICXEuOHLprYTw==
   /whatwg-url/9.1.0:
     dependencies:
       tr46: 2.1.0
@@ -1629,7 +1648,7 @@ specifiers:
   google-closure-library: ^20201102.0.1
   lodash: ^4.17.21
   mongodb: ^4.1.0
-  node-fetch: ^2.6.1
+  node-fetch: ^2.7.0
   nodemon: ^2.0.9
   ssh-spawner: ^2.1.1
   ws: ^6.1.4

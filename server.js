@@ -17,6 +17,7 @@ const util = require("./lib/util");
 const ran = require("./lib/random");
 const hshg = require("./lib/hshg");
 const axios = require('axios');
+const { readdirSync } = require("fs");
 const co = require("./config.json");
 const _ = require('lodash');
 //data to manage the server with chat commands
@@ -38,6 +39,10 @@ const notificationMessageColor = 14;
 const pmMessageColor = 13;
 const successMessageColor = 11;
 const errorMessageColor = 12;
+
+
+
+
 
 const _mazeWallsState = {
     locked: true,
@@ -7277,56 +7282,63 @@ app.get("/home", (request, response) => {
 response.sendFile(__dirname + "/client/index.html");
 });
 
+// ====================================================
+// api command functions
+// ====================================================
+function shutdownServer(){
+    sockets.broadcast("The server is going down.", errorMessageColor);
+    util.log("Server going down! Warning broadcasted.");
+    setTimeout(() => {
+      sockets.broadcast("Arena closed.", errorMessageColor);
+      util.log("Final warning broadcasted.");
+      setTimeout(() => {
+        sockets.broadcast('Disconnecting...', errorMessageColor)
+        util.warn("Process ended.");
+        process.exit();
+      }, 3000);
+    }, 5000);
+};
 
-app.post("/login", (req, res) => {
-const database = require("./server_data.js");
-let account_names = database.usernames;
-if(!req.body.password){
-  res.status(406).json({
-        status: 406, 
-        success: false,
-        message: 'Password is required.'
-      });      
-};
-  if(!req.body.username){
-  res.status(406).json({
-        status: 406, 
-        success: false,
-        message: 'Username is required.'
-      });      
-};
-let username = req.body.username;
-let password_unencrypted = req.body.password;
-let password = sha256(password_unencrypted).toUpperCase();
-
-for(let username of account_names){
-let test_account = database.accounts[username];
-if(!test_account){
-res.status(406).json({
-message: "Authentication Failed."
-  });
-  return;
-};
-if(test_account.hash !== password){
-res.status(406).json({
-message: "Authentication Failed."
-});
-  return;
+function killEveryone(){
+for(let entity of entities){
+entity.destroy(); //kill it.
   };
+sockets.broadcast('Received request to kill everyone.', errorMessageColor);
+};
 
-let info = {
-accounts: database.accounts,
-authenticated_account: test_account,
-names: account_names
-}
-res.json(info);
-data.push(test_account);
-return;
-}
-});
-app.post("/profile", (req, res)=> {
-res.json(data);
-})
+function listEntities(){
+  let output = '';
+entities.forEach(function(element, sockets) {
+    if (element.name != '') {
+        output += String(`**${element.name}**  -  **${element.id}** \n`)
+    }});
+  return output;
+};
+
+function kickSpecifiedPlayer(id, reason, kicker){
+let clients = sockets.getClients();
+for(let client of clients){
+if(client.player.viewId == id){
+client.player.body.sendMessage(`You have been kicked by ${kicker}. Reason: ${reason}`, errorMessageColor);
+client.kick(reason);
+    }
+  }
+};
+
+function killSpecifiedPlayer(id, killer){
+let clients = sockets.getClients();
+for(let client of clients){
+if(client.player.viewId == id){
+if(client.player.body !== null){ // verify it is alive to avoid a potential crash.
+client.player.body.sendMessage(`You have been killed by ${killer}`, errorMessageColor);
+setTimeout(()=>{client.player.body.destroy()},300); // kill it
+    }
+   }
+  }
+};
+
+
+// ====================================================
 
 app.post("/status", (req, res) => {
 let player_count = sockets.getClients().length; // this counts all the clients(bots and food excluded)
@@ -7336,7 +7348,7 @@ status: "online",
 uptime_code: 200,
 message: "Server is running properly",
 players: player_count,
-bot_status: bot_status,
+bot_status: "bot is online"
    })
 })
 
@@ -7360,7 +7372,7 @@ if(!req.body.password){
         status: 406, 
         success: false,
         message: 'Password is required.'
-      });      
+      });    return;   
 };
   // check if it includes a command code to tell the server what to do
 if(!req.body.command){
@@ -7368,7 +7380,7 @@ if(!req.body.command){
          status: 406, 
          success: false,
         message: 'command code is required.'
-      }); 
+      }); return;
 };
   //check wether the password is valid to block hackers trying to manipulate the API.
 if(req.body.password !== process.env.API_password){
@@ -7376,49 +7388,15 @@ res.status(406).json({
   status: 406, 
   success: false,
   message: "The password you provided is invalid."
-})
+}); return;
 };
-
-
-if(req.body.command === 'lockdown'){
-res.status(200).json({
-status: 200,
-success: true,
-message: "Locking down the server."
-});
-console.log("[SERVER]: received lockdown request.");
-SERVER_LOCKDOWN_STATE = true;
-for(let socket of sockets.getClients()){
-socket.talk("T", "Server is in lockdown.", true); // send the request to the client.
-socket.player.body.destroy();
-
-  };
-};
-  
-  if(req.body.command === 'unlock'){
-res.status(200).json({
-status: 200,
-success: true,
-message: "Unlocking the server."
-});
-console.log("[SERVER]: received unlock request.");
-SERVER_LOCKDOWN_STATE = false;
-for(let socket of sockets.getClients()){ // bleh
-let name = socket.player.name;
-socket.talk("T", "Unlocking server. Have patience.", false); // send the request to the client.
-setTimeout(() => {
-socket.player.body.destroy()
-socket.talk("T", "", false);
-    }, 3000);
-  };
-}
   
 if(req.body.command === 'restartServer'){
 res.status(200).json({
   status: 200,
   success: true,
   message: "Server is restarting."
-});
+}); return;
 
 console.log('[SERVER]: received shutdown request.');
 
@@ -7434,6 +7412,7 @@ res.status(200).json({
 
 console.log('[SERVER]: received kill everyone request');
 killEveryone(); // kill everyone.
+  return;
 };
   
   if(req.body.command === 'listEntities'){
@@ -7443,7 +7422,7 @@ res.status(200).json({
   success: true,
   message: "Entities list sent.",
   list: list
-});
+}); return;
 
 console.log('[SERVER]: received list entities request');
 };

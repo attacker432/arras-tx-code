@@ -10,7 +10,7 @@
     "@discordjs/builders": "^1.1.0",
     "discord.js": "^14.5.0",
     "google-closure-library": "^20201102.0.1",
-    "node-fetch": "^2.6.1",
+    "node-fetch": "^2.7.0",
     "ws": "^6.1.4",
     "express": "latest",
     "nodemon": "^2.0.9",
