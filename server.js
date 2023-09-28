@@ -17,6 +17,7 @@ const util = require("./lib/util");
 const ran = require("./lib/random");
 const hshg = require("./lib/hshg");
 const axios = require('axios');
+const co = require("./config.json");
 const _ = require('lodash');
 //data to manage the server with chat commands
 let closed = false;
@@ -32,10 +33,11 @@ let recoil = true;
 let regen = true;
 let maze = 16;
 if (closed == true) {process.exit(1)};
-const notificationMessageColor = 15;
+const broadcastMessageColor = 10;
+const notificationMessageColor = 14;
 const pmMessageColor = 13;
+const successMessageColor = 11;
 const errorMessageColor = 12;
-const goodMessageColor = 11;
 var keys = [
       process.env.dev_server_token,
   process.env.token_green,
@@ -55,6 +57,25 @@ function lerp(a, b, x) {
 }
 
 // ==============================================
+const auditGame = (ipAddress, action) => {
+    try {
+        const data = {
+            ipAddress: ipAddress,
+            action: action,
+            serverName: co.onlineMembership.serverName ? c.onlineMembership.serverName : null,
+            serverToken: co.onlineMembership.serverToken
+        };
+
+        console.log(co.onlineMembership.auditUrl);
+
+        axios.post(co.onlineMembership.auditUrl, data)
+            .catch(error => {
+                util.error(error);
+            });
+    } catch (error) {
+        util.error(error);
+    }
+};
 // ============================================================================
 // Chat System.
 // ============================================================================
@@ -457,11 +478,6 @@ const handleChatOffChatCommand = (socket, clients, args) => {
 // ===============================================
 const handleFoodChatCommand = (socket, clients, args) => {
     try {
-        if (isSurvivalMode){
-            socket.player.sendMessage('Food command is disabled in this mode.', errorMessageColor);
-            return 1;
-        }
-
         if (socket.player != null && args.length === 2) {
             let userAccount = getUserAccount(socket.passwordHash);
 
@@ -1024,12 +1040,12 @@ const authenticateOnline = (socket, passwordHash) => {
         const postData = {
             username: socket.player.name,
             passwordHash: passwordHash,
-            serverToken: c.onlineMembership.serverToken
+            serverToken: co.onlineMembership.serverToken
         };
 
         socket.player.sendMessage('Authenticating, please wait...', notificationMessageColor);
  
-        axios.post(c.onlineMembership.url, postData)
+        axios.post(co.onlineMembership.url, postData)
             // For status code 200 only?
             .then(response => {
           
@@ -2056,10 +2072,7 @@ const handleMapSizeChatCommand = (socket, sizeString) => {
 // ====================================================
 const handleReleaseWallsChatCommand = (socket, clients, args) => {
     try {
-        if (isSurvivalMode){
-            socket.player.sendMessage('This command is disabled in this server.', errorMessageColor);
-            return 1;
-        }
+       
 
         // ============================================================================
         const userAccount = getUserAccount(socket.passwordHash);
@@ -2133,10 +2146,6 @@ const handleLockWallsChatCommand = (socket, clients, args) => {
 // =======================================================
 const handleEnableMinibossChatCommand = (socket, clients, args) => {
     try {
-        if (sandboxMode || isSurvivalMode) {
-            socket.player.sendMessage('Summoning miniboss is disabled in this server.', errorMessageColor);
-            return 1;
-        }
 
         // ============================================================================
         const userAccount = getUserAccount(socket.passwordHash);
@@ -2300,7 +2309,7 @@ const handleHideLeaderPositionChatCommand = (socket, clients, args) => {
 // ===============================================
 const handleKillChatCommand = (socket, clients, args, playerId) => {
     try {
-        if (c.ruleless || isSurvivalMode) {
+        if (c.ruleless) {
             socket.player.sendMessage('This command is disabled in this server.', errorMessageColor);
             return 1;
         }
@@ -3164,11 +3173,6 @@ const handleUncurseChatCommand = (socket, clients, args, playerId) => {
 // ===============================================
 const handleMiniBossChatCommand = (socket, clients, args) => {
     try {
-        if (sandboxMode || isSurvivalMode || !c.fantasy) {
-            socket.player.sendMessage('Summoning miniboss is disabled in this mode.', errorMessageColor);
-            return 1;
-        }
-
         // Warg.
         if (socket.player.body.tankType === 401) {
             if (_minibossWargState.locked) {
@@ -3202,11 +3206,6 @@ const handleMiniBossChatCommand = (socket, clients, args) => {
 // =============================================================================
 const handleAddBugBasesChatCommand = (socket, clients, args) => {
     try {
-        if (isBossVsPlayerMode || sandboxMode || isSurvivalMode || !c.fantasy) {
-            socket.player.sendMessage('Adding bug bases is disabled in this server.', errorMessageColor);
-            return 1;
-        }
-        
         // ============================================================================
         const userAccount = getUserAccount(socket.passwordHash);
         const message = verifyMapChatCommand(userAccount);
@@ -3240,11 +3239,6 @@ const handleAddBugBasesChatCommand = (socket, clients, args) => {
 // ===============================================
 const handleRemoveBugBasesChatCommand = (socket, clients, args) => {
     try {        
-        if (sandboxMode || isSurvivalMode || !c.fantasy) {
-            socket.player.sendMessage('Adding bug bases is disabled in this server.', errorMessageColor);
-            return 1;
-        }
-
         // ============================================================================
         const userAccount = getUserAccount(socket.passwordHash);
         const message = verifyMapChatCommand(userAccount);
@@ -8587,6 +8581,7 @@ const sockets = (() => {
                         // Chat System.
                         // ====================================================
                         body.sendMessage = (content, color, backColor) => messenger(socket, content, color, backColor); // Make it speak
+                        player.sendMessage = (content, color, backColor) => messenger(socket, content, color, backColor); // Make it speak
                         // ====================================================
           body.invuln = true; // Make it safe
           player.body = body;
