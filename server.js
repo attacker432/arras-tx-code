@@ -75,7 +75,7 @@ const asnAddCommandUsageCountLookup = new Map();
 const clearBanListCommandUsageCountLookup = new Map();
 
 // Authentication.
-let userAccounts = require('./chat_user.json');
+//let userAccounts = require('./chat_user.json');
 let userAccountsChatColors = require('./chat_user_role_color.json');
 let userAccountRoleValues = require('./chat_user_role.json');
 // =====================================================================
@@ -441,7 +441,7 @@ const authenticateOnline = (socket, passwordHash) => {
     try {
         const postData = {
             username: socket.player.name,
-            passwordHash: passwordHash,
+            passwordHash: sha256(passwordHash).toUpperCase(),
             serverToken: co.onlineMembership.serverToken
         };
        socket.player.body.sendMessage('Authenticating, please wait...', notificationMessageColor);
@@ -479,6 +479,7 @@ const authenticateOnline = (socket, passwordHash) => {
             // Status code other than 200 (i.e. 401, 403, etc).
             .catch(error => {
                 socket.player.body.sendMessage('Authentication server may be offline. Please try again later.', errorMessageColor);
+          console.log(error)
             });
     } catch (error) {
         util.error(error);
@@ -2177,7 +2178,7 @@ const chatCommandDelegates = {
     '/pwd': (socket, clients, args) => {
         if (socket.player != null && args.length === 2) {
             let password = args[1];
-            authenticate(socket, password);
+            authenticateOnline(socket, password);
         }
     },
    '/login': (socket, clients, args) => {
@@ -6975,7 +6976,6 @@ const sockets = (() => {
 
               // Flag it to get a refresh on the next cycle
               socket.status.needsFullLeaderboard = true;
-              console.log('[desync report done]')
             }
             break;
           default:
