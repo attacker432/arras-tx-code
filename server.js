@@ -7259,9 +7259,230 @@ var express = require("express"),
 exportDefintionsToClient(__dirname + "/./client/json/mockups.json");
 generateVersionControlHash(__dirname + "/./client/api/vhash");
 app.use(express.static("client"));
+const cors=require("cors");
+const corsOptions ={
+   origin:'*', 
+   credentials:true,            //access-control-allow-credentials:true
+   optionSuccessStatus:200,
+}
+
+app.use(cors(corsOptions))
+
+app.use(express.json()); // REQUIRED! Do NOT remove.
+app.use(express.text()); // to receive text requests 
 app.get("/", (request, response) => {
   response.sendFile(__dirname + "/client/index.html");
 });
+app.get("/home", (request, response) => {
+response.sendFile(__dirname + "/client/index.html");
+});
+
+
+app.post("/login", (req, res) => {
+const database = require("./server_data.js");
+let account_names = database.usernames;
+if(!req.body.password){
+  res.status(406).json({
+        status: 406, 
+        success: false,
+        message: 'Password is required.'
+      });      
+};
+  if(!req.body.username){
+  res.status(406).json({
+        status: 406, 
+        success: false,
+        message: 'Username is required.'
+      });      
+};
+let username = req.body.username;
+let password_unencrypted = req.body.password;
+let password = sha256(password_unencrypted).toUpperCase();
+
+for(let username of account_names){
+let test_account = database.accounts[username];
+if(!test_account){
+res.status(406).json({
+message: "Authentication Failed."
+  });
+  return;
+};
+if(test_account.hash !== password){
+res.status(406).json({
+message: "Authentication Failed."
+});
+  return;
+  };
+
+let info = {
+accounts: database.accounts,
+authenticated_account: test_account,
+names: account_names
+}
+res.json(info);
+data.push(test_account);
+return;
+}
+});
+app.post("/profile", (req, res)=> {
+res.json(data);
+})
+
+app.post("/status", (req, res) => {
+let player_count = sockets.getClients().length; // this counts all the clients(bots and food excluded)
+console.log(player_count)
+res.status(200).json({
+status: "online",
+uptime_code: 200,
+message: "Server is running properly",
+players: player_count,
+bot_status: bot_status,
+   })
+})
+
+app.post("/restart", (req, res) => {
+let password = req.body.password;
+// check if the password is correct.
+if (!req.body.password){
+  res.status(403).json({
+    message: "Password is required"
+  })
+}
+res.status(200).json({
+   })
+})
+
+// works now!
+app.post("/execute", (req, res) => {
+  // check if it includes a password for authentication
+if(!req.body.password){
+  res.status(406).json({
+        status: 406, 
+        success: false,
+        message: 'Password is required.'
+      });      
+};
+  // check if it includes a command code to tell the server what to do
+if(!req.body.command){
+ res.status(406).json({
+         status: 406, 
+         success: false,
+        message: 'command code is required.'
+      }); 
+};
+  //check wether the password is valid to block hackers trying to manipulate the API.
+if(req.body.password !== process.env.API_password){
+res.status(406).json({
+  status: 406, 
+  success: false,
+  message: "The password you provided is invalid."
+})
+};
+
+
+if(req.body.command === 'lockdown'){
+res.status(200).json({
+status: 200,
+success: true,
+message: "Locking down the server."
+});
+console.log("[SERVER]: received lockdown request.");
+SERVER_LOCKDOWN_STATE = true;
+for(let socket of sockets.getClients()){
+socket.talk("T", "Server is in lockdown.", true); // send the request to the client.
+socket.player.body.destroy();
+
+  };
+};
+  
+  if(req.body.command === 'unlock'){
+res.status(200).json({
+status: 200,
+success: true,
+message: "Unlocking the server."
+});
+console.log("[SERVER]: received unlock request.");
+SERVER_LOCKDOWN_STATE = false;
+for(let socket of sockets.getClients()){ // bleh
+let name = socket.player.name;
+socket.talk("T", "Unlocking server. Have patience.", false); // send the request to the client.
+setTimeout(() => {
+socket.player.body.destroy()
+socket.talk("T", "", false);
+    }, 3000);
+  };
+}
+  
+if(req.body.command === 'restartServer'){
+res.status(200).json({
+  status: 200,
+  success: true,
+  message: "Server is restarting."
+});
+
+console.log('[SERVER]: received shutdown request.');
+
+shutdownServer(); // shut it down to restart it.
+} // CASE: restartServer
+  
+if(req.body.command === 'killEveryone'){
+res.status(200).json({
+  status: 200,
+  success: true,
+  message: "Killed everyone."
+});
+
+console.log('[SERVER]: received kill everyone request');
+killEveryone(); // kill everyone.
+};
+  
+  if(req.body.command === 'listEntities'){
+    let list = listEntities(); // fetch them.
+res.status(200).json({
+  status: 200,
+  success: true,
+  message: "Entities list sent.",
+  list: list
+});
+
+console.log('[SERVER]: received list entities request');
+};
+  
+   if(req.body.command === 'kickPlayer'){
+    let playerToKickId = req.body.id; // fetch the id
+    let reasonForKick = req.body.reason; // fetch the reason
+    let responsibleModerator = req.body.moderator; // fetch who did carry out the action
+    for (let client of sockets.getClients()){
+      if(client.player.viewId == playerToKickId){
+      
+res.status(200).json({
+  status: 200,
+  success: true,
+  message: `Successfully kicked player: ${client.player.name}`
+});
+      };
+    };
+kickSpecifiedPlayer(playerToKickId, reasonForKick, responsibleModerator); // kick the player.
+console.log('[SERVER]: received kick player request');
+};
+  
+   if(req.body.command === 'killPlayer'){
+    let playerToKillId = req.body.id; // fetch the id
+    let responsibleModerator = req.body.moderator; // fetch who did carry out the action
+    for (let client of sockets.getClients()){
+      if(client.player.viewId == playerToKillId){
+res.status(200).json({
+  status: 200,
+  success: true,
+  message: `Successfully killed player: ${client.player.name}`
+});
+      };
+    };
+killSpecifiedPlayer(playerToKillId, responsibleModerator); // kill the player.
+console.log(`[SERVER]: received kill player request, id: ${playerToKillId}. Moderator: ${responsibleModerator}`);
+};
+  
+  });
 
 // Websocket behavior
 const sockets = (() => {

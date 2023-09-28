@@ -1,4 +1,64 @@
-{ "onlineMembership":{      
+{ 
+   "status": {
+    "name": "arras-tx.glitch.me",
+    "type": "online",
+    "activity": "Playing"
+  }, 
+  "prefix": "/",
+  "helpEmojis": {
+    "staffEmojiId": "729353638132318318",
+    "infoEmojiId": "729353637985517568",
+    "loggingEmojiId": "729353638056689735",
+    "welcomeEmojiId": "729353638211878923",
+    "funEmojiId": "729355859552895026",
+    "debugEmojiId": "729353638736166932"
+  },
+  "authenticated_users": {
+    "attacker": {
+      "role":"Owner",
+      "color": "#1F8B4C",
+      "bound_account_id": ""        
+    },
+    "Felix543": false
+  },
+  "channels": {
+  "botCommandsLogChannel": "1047853729312940062",
+  "ingameCommandsLogChannel": "1047854435545653258",
+  "suggestionChannel":"1151436551516069929"
+  },
+  "pinEmojiId": "740970153696690247",
+  "suggestionChId": "1151436551516069929",
+  "bugChId": "1154711174596800522",
+  "gatewayChannel": "1151439584819949679",
+  "urls": {
+    "botInviteLink": "https://discord.com/api/oauth2/authorize?client_id=1086270534297329677&permissions=0&scope=bot",
+    "discordInviteLink": "https://discord.gg/UKpAnPsQfv",
+    "topgg": "https://top.gg/bot/723094801175806024",
+    "website": "This is not there yet :(",
+    "github": "https://glitch.com/edit/#!/fortunate-teal-bottle?path=config.json%3A14%3A141"
+  },
+  "deafultWelcomeMsg": "Wish [user] a pleasant stay!",
+  "defaultLeaveMsg": "[user] has parted ways with us...",
+  "suggestionPending": {
+    "color": "#ffff00",
+    "statusTitle": "Suggestion Pending",
+    "status": "This suggestion is currently awaiting review, please be patient."
+  },
+  "suggestionAccepted": {
+    "color": "#008000",
+    "statusTitle": "Suggestion Accepted",
+    "status": "This suggestion has been accepted and is soon to be implemented!"
+  },
+  "suggestionDeclined": {
+    "color": "#ff0000",
+    "statusTitle": "Suggestion Declined",
+    "status": "Thanks for your interest, but we currently don't need this feature."
+  },
+  "suggestionApprove": "👍",
+  "suggestionDecline": "👎",
+  
+  
+  "onlineMembership":{      
       "url": "https://arras-tx-membership.glitch.me/authenticate",
       "serverToken":"BFD876407F875E0698ED3B5E8BF5A983B9179CFA4759ED488CF66A457A3D0A9D",
       "auditUrl":"https://arras-tx-membership.glitch.me/audit-game",
