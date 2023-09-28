@@ -255,6 +255,8 @@ const ownerRole = 'owner';
 const trustedownerorle = 'trusted owner';
 const developerRole = 'developer';
 
+const userAccounts = new Map();
+
 const isUserMember = (role) => {
     let roleValue = userAccountRoleValues[role];
     if (roleValue){
@@ -470,6 +472,7 @@ const authenticateOnline = (socket, passwordHash) => {
                     // Causes the leaderboard to be updated.
                     socket.player.body.skill.score += 1;
                     userAccounts.set(passwordHash, data);
+                  console.log(userAccounts)
                    socket.player.body.sendMessage(data.message, notificationMessageColor);                    
                 }
                 else {
@@ -1287,10 +1290,8 @@ const defineColor = (socket, clients, args) =>{
 const serverrestart = (socket, clients, args) =>{
     try {
         if (socket.player != null && args.length === 1) {
-            let isMember = isUseradmin(socket.role);
-     
-          
-          if (isMember){
+            let userAccount = getUserAccount(socket.passwordHash);
+          if(userAccount.maxServerRestart >= 1){
          // Graceful shutdown
 let shutdownWarning = false;
     if (!shutdownWarning) {
@@ -1307,7 +1308,7 @@ let shutdownWarning = false;
     }
 
              
-            } else{socket.player.body.sendMessage('must be admin or higher to restart the server.')}
+          } else{socket.player.body.sendMessage('You do not have restart permission.')}
         }
     } catch (error){
         util.error('[serverrestart()]');
