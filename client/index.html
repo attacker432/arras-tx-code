@@ -45,9 +45,9 @@
     });
   </script>
   <!-- Favicons -->
-  <link rel="icon" type="image/png" sizes="96x96" href="https://raw.githubusercontent.com/nepphhh/arrasio/master/arrasio/src/client/favicons/favicon.ico">
+  <link rel="icon" type="image/png" sizes="96x96" href="https://cdn.discordapp.com/icons/1121497751759364227/5d19a87529a82772e0b16fe9eefaac94.png">
   <meta name="msapplication-TileColor" content="#ffffff">
-  <meta name="theme-color" content="#ffffff">
+  <meta name="theme-color" content="#21E218">
 </head>
 
 <body oncontextmenu="return false;" id="mainBody">
@@ -57,10 +57,7 @@
   <div id="mainWrapper">
     <div id="startMenuWrapper">
       <div id="startMenu">
-        <div class="startMenuHolder">
-          <iframe src="https://discord.com/widget?id=860211624677474345&theme=dark" width="350" height="500" allowtransparency="true" frameborder="0" sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts"></iframe>
-        </div>
-        <div class="startMenuHolder">
+      <div class="startMenuHolder">
           <div class="sliderHolder">
             <div class="slider" id="startMenuSlidingContent">
               <center><img src="https://github.com/nepphhh/arrasio/blob/master/arrasio/src/client/favicons/favicon-96x96.png?raw=true" /></center>
@@ -68,8 +65,8 @@
               <div id="serverName">
                 <h4 class="nopadding">Connecting...</h4>
               </div>
-              <input type="text" autofocus tabindex="1" spellcheck="false" placeholder="This is the tale of:" id="playerNameInput" maxlength="24" />
-              <input type="text" class="conceal" tabindex="3" placeholder="Token Required" id="playerKeyInput" maxlength="64" />
+              <input type="text" autofocus tabindex="1" spellcheck="false" placeholder="Player Name Input" id="playerNameInput" maxlength="24" />
+              <input type="text" class="conceal" tabindex="3" placeholder="Developer Token" id="playerKeyInput" maxlength="64" />
             </div>
             <div class="slider" id="startMenuSlidingTrigger">
               <h3 class="nopadding">view options/help 🡲</h3>
@@ -85,6 +82,7 @@
                 <tr>
                   <td><b>R</b>: disable auto-weapons</td>
                   <td><b>N</b>: level up (sandbox)</td>
+                  <td><b>`</b>: Become testbed(developer only)</td>
                 </tr>
               </table>
               <optionsHeader>Options:</optionsHeader>
@@ -141,12 +139,15 @@
           </div>
         </div>
         <div class="startMenuHolder" allowtransparency="true">
-          <iframe id="patchNotesIFrame" src="changelog.html" seamless='seamless' frameBorder="0">Patch notes go here!</iframe>
+          <h1>
+            Changelog
+          </h1>
+          <iframe id="patchNotesIFrame" src="changelog.html" seamless="seamless" frameborder="0">Patch notes go here!</iframe>
         </div>
         <div id="bottomHolder">
           <h5 class="nopadding" style="margin:0; display:inline">Help support the dev: </h5>
-          <form action="https://www.patreon.com/arras_dev" method="post" target="_top">
-            <input id="pledge" type="submit" value="Patreon!">
+          <form action="https://discord.gg/T3qUxgAm9B" method="post" target="_top">
+            <input id="pledge" type="submit" value="Discord">
           </form>
           <form action="https://www.paypal.com/cgi-bin/webscr" method="post" target="_top">
             <input type="hidden" name="cmd" value="_s-xclick">

@@ -18,6 +18,10 @@ canvas {
   height: 100%;
   margin: 0;
   padding: 0;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-image: url('https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Ftse3.mm.bing.net%2Fth%3Fid%3DOIP.BmnM3QnNp6RcyHZAEKRlSwHaEo%26pid%3DApi&f=1&ipt=e0e3b43bd2f74ea098d3b25b1ab3184847a2d06bd04d4515e4281e6f807713e5&ipo=images');
+
 }
 
 h1 {
