@@ -12,7 +12,6 @@ module.exports = {
     const { staffEmojiId, infoEmojiId, loggingEmojiId, welcomeEmojiId, funEmojiId, debugEmojiId } = helpEmojis;
     const { botInviteLink, discordInviteLink, topgg, website, github } = urls;
     let color = getRoleColor(interaction.guild);
-    console.log(color)
     let debugCmds = '';
     let infoCmds = '';
     let adminCmds = '';
@@ -22,10 +21,9 @@ module.exports = {
     fs.readdirSync('./Commands/Info').forEach((file) => {
       infoCmds += `/${file.slice(0, file.lastIndexOf('.'))} `;
     });
-    fs.readdirSync('./Commands/admin').forEach((file) => {
+    fs.readdirSync('./Commands/Admin').forEach((file) => {
       adminCmds += `/${file.slice(0, file.lastIndexOf('.'))} `;
     });
-   console.log(interaction.client.emojis.cache)
     const helpEmbed = new EmbedBuilder()
       .setColor(`#2AFF00`)
       .setTitle('Commands')
@@ -67,6 +65,5 @@ module.exports = {
         .setStyle('Link')
     );
     interaction.reply({ embeds: [helpEmbed], components: [links] });
-    console.log(config.authenticated_users)
   }
 }

@@ -72,7 +72,7 @@ readdirSync("./Events").forEach((folder) => {
   });
 });
 
-//client.login(process.env.bot_token);
+client.login(process.env.bot_token);
 const valid_commands = ['restartServer', 'killEveryone', 'kickPlayer', 'killPlayer']; // define which command codes are valid.
 var bot_status = "Offline";
 
@@ -7296,7 +7296,7 @@ var express = require("express"),
 
 // Give the client upon request
 //exportDefintionsToClient(__dirname + "/./client/json/mockups.json");
-generateVersionControlHash(__dirname + "/./client/api/vhash");
+//generateVersionControlHash(__dirname + "/./client/api/vhash");
 app.use(express.static("client"));
 const cors=require("cors");
 const corsOptions ={
@@ -7424,8 +7424,9 @@ res.status(406).json({
   message: "The password you provided is invalid."
 }); return;
 };
-  
+  console.log(req.body.command)
 if(req.body.command === 'restartServer'){
+  console.log(".")
 res.status(200).json({
   status: 200,
   success: true,
