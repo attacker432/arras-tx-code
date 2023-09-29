@@ -7239,6 +7239,7 @@ var express = require("express"),
     // Remove them
     purgeEntities();
     // Build the function to return
+ 
     let writeData = JSON.stringify(mockupData); //, null, 2); // Make it easy to read <3 or don't because it causes a little loading time...
     return loc => {
       util.log("Preparing definition export.");
@@ -7294,7 +7295,7 @@ var express = require("express"),
   })();
 
 // Give the client upon request
-exportDefintionsToClient(__dirname + "/./client/json/mockups.json");
+//exportDefintionsToClient(__dirname + "/./client/json/mockups.json");
 generateVersionControlHash(__dirname + "/./client/api/vhash");
 app.use(express.static("client"));
 const cors=require("cors");
