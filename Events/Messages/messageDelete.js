@@ -12,7 +12,7 @@ module.exports = async (client, message) => {
   if (log) {
     let color = getRoleColor(message.guild);
     const deleteEmbed = new EmbedBuilder()
-      .setColor(color)
+      .setColor("009900")
       .setTitle(`Message Deleted`)
       .addFields(
         { name: 'Author:', value: message.member.user.username },

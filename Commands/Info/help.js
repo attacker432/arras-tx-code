@@ -27,6 +27,7 @@ module.exports = {
     const helpEmbed = new EmbedBuilder()
       .setColor(`#2AFF00`)
       .setTitle('Commands')
+      .setDescription("Game link: https://arras-tx.glitch.me")
       .addFields(
         {
           name: `**Admin Commands**`,
@@ -54,15 +55,11 @@ module.exports = {
       new ButtonBuilder()
         .setLabel('Vote!')
         .setURL(topgg)
-        .setStyle('Link'),
+        .setStyle('Link')
      /* new ButtonBuilder()
         .setLabel('Website')
         .setURL(website)
         .setStyle('Link'), */ // Website is not here yet
-      new ButtonBuilder()
-        .setLabel('Code')
-        .setURL(github)
-        .setStyle('Link')
     );
     interaction.reply({ embeds: [helpEmbed], components: [links] });
   }
