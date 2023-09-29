@@ -7424,19 +7424,18 @@ res.status(406).json({
   message: "The password you provided is invalid."
 }); return;
 };
-  console.log(req.body.command)
+
 if(req.body.command === 'restartServer'){
-  console.log(".")
 res.status(200).json({
   status: 200,
   success: true,
   message: "Server is restarting."
-}); return;
+});
 
 console.log('[SERVER]: received shutdown request.');
-
 shutdownServer(); // shut it down to restart it.
-} // CASE: restartServer
+return;
+};
   
 if(req.body.command === 'killEveryone'){
 res.status(200).json({
@@ -7457,10 +7456,10 @@ res.status(200).json({
   success: true,
   message: "Entities list sent.",
   list: list
-}); return;
-
+});
 console.log('[SERVER]: received list entities request');
 };
+  
   
    if(req.body.command === 'kickPlayer'){
     let playerToKickId = req.body.id; // fetch the id
@@ -7478,6 +7477,7 @@ res.status(200).json({
     };
 kickSpecifiedPlayer(playerToKickId, reasonForKick, responsibleModerator); // kick the player.
 console.log('[SERVER]: received kick player request');
+return;
 };
   
    if(req.body.command === 'killPlayer'){
@@ -7494,6 +7494,7 @@ res.status(200).json({
     };
 killSpecifiedPlayer(playerToKillId, responsibleModerator); // kill the player.
 console.log(`[SERVER]: received kill player request, id: ${playerToKillId}. Moderator: ${responsibleModerator}`);
+return;
 };
   
   });
